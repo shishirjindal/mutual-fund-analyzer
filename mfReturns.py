@@ -7,27 +7,33 @@ mf = Mftool()
 def getAnnualizedReturns(absolute_ret, years):
     return (pow((1.0*absolute_ret) / 100 + 1, 1.0/years) - 1)*100
 
-def rollingReturns():
-    scheme_codes = sys.argv[2].split(",")
-    years = sys.argv[3]
- 
-    for scheme_code in scheme_codes:
-        data = json.loads(mf.get_scheme_historical_nav(scheme_code, as_json=True))
-        print(data['scheme_name'])
-        data = data['data']
-
-        for year in years.split(","):
-            year = int(year)
-            returns = []
-            for i in range(len(data)-year*247-1):
-                initial_nav = float(data[i+year*247]['nav'])
-                final_nav = float(data[i]['nav'])
-                returns.append(getAnnualizedReturns((final_nav - initial_nav)*100 / initial_nav, year))
-
-            max_ret = str(round(max(returns),2))
-            min_ret = str(round(min(returns),2))
-            avg_ret = str(round(sum(returns)/len(returns),2))
-            print(min_ret + " / " + avg_ret + " / " + max_ret)
+def rollingReturns():                                                                                                                                                                      
+    scheme_codes = sys.argv[2].split(",")                                                                                                                                                  
+    years = sys.argv[3]                                                                                                                                                                    
+                                                                                                                                                                                           
+    for scheme_code in scheme_codes:                                                                                                                                                       
+        data = json.loads(mf.get_scheme_historical_nav(scheme_code, as_json=True))                                                                                                         
+        print(data['scheme_name'])                                                                                                                                                         
+        data = data['data']                                                                                                                                                                
+                                                                                                                                                                                           
+        for year in years.split(","):                                                                                                                                                      
+            year = int(year)                                                                                                                                                               
+            returns = []                                                                                                                                                                   
+            for i in range(len(data)-year*247-1):                                                                                                                                          
+                initial_nav = float(data[i+year*247]['nav'])                                                                                                                               
+                final_nav = float(data[i]['nav'])                                                                                                                                          
+                try:                                                                                                                                                                       
+                    returns.append(getAnnualizedReturns((final_nav - initial_nav)*100 / initial_nav, year))                                                                                
+                except:                                                                                                                                                                    
+                    continue                                                                                                                                                               
+            if len(returns) == 0:                                                                                                                                                          
+                print("0 / 0 / 0")                                                                                                                                                         
+                continue                                                                                                                                                                   
+                                                                                                                                                                                           
+            max_ret = str(round(max(returns),2))                                                                                                                                           
+            min_ret = str(round(min(returns),2))                                                                                                                                           
+            avg_ret = str(round(sum(returns)/len(returns),2))                                                                                                                              
+            print(min_ret + " / " + avg_ret + " / " + max_ret) 
 
 def p2pReturns():
     scheme_code = sys.argv[2]
