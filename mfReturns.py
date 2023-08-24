@@ -58,7 +58,7 @@ def calReturns():
 
     for scheme_code in scheme_codes:
         data = json.loads(mf.get_scheme_historical_nav(scheme_code, as_json=True))
-        print(data['scheme_name'])
+        #print(data['scheme_name'])
         returns = []
 
         for year in years:
@@ -75,6 +75,8 @@ def calReturns():
                         i['date'] == "02-01-"+str(int(year)+1) or\
                         i['date'] == "03-01-"+str(int(year)+1):
                             final_nav = float(i['nav'])
+            if str(year) == str(datetime.date.today().year):
+                final_nav = float(data['data'][0]['nav'])
             if initial_nav == 0 or final_nav == 0:
                 returns.append("0.0")
             else:
