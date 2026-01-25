@@ -1,0 +1,6 @@
+# Mutual Fund Returns Script Dependencies
+# Python 3.10+ required (tested with Python 3.14.2)
+
+mftool>=3.0
+yfinance>=1.0
+deprecated>=1.3.1
