@@ -12,12 +12,14 @@ This script calculates various types of returns for mutual fund schemes:
 import sys
 import json
 import datetime
+import statistics
+import math
 from mftool import Mftool
 from constants import Constants
 
 
-class MutualFundReturnsCalculator:
-    """Calculator for mutual fund returns including rolling returns and calendar year returns."""
+class MutualFundAnalyzer:
+    """Analyzer for mutual fund parameters including returns, risk measures, and performance metrics."""
     
     def __init__(self, scheme_code):
         """
@@ -121,7 +123,7 @@ class MutualFundReturnsCalculator:
                         continue
                     
                     absolute_return = (final_nav - initial_nav) * 100 / initial_nav
-                    cagr = MutualFundReturnsCalculator._calculate_cagr(absolute_return, year)
+                    cagr = self._calculate_cagr(absolute_return, year)
                     cagr_values.append(cagr)
                     
                 except (ValueError, KeyError, IndexError, ZeroDivisionError):
@@ -195,22 +197,129 @@ class MutualFundReturnsCalculator:
             'calendar_returns': calendar_returns
         }
     
-    def _print_returns(self, rolling_data, calendar_data):
+    def _calculate_sharpe_ratio(self):
+        """
+        Calculate annualized Sharpe Ratio for 1, 3, and 5 years using daily NAV returns.
+        Internal method.
+        
+        Calculation methodology for each period:
+        1. Compute daily returns from consecutive NAV values
+        2. Calculate arithmetic mean of daily returns
+        3. Annualize the mean return: Annualized Return = Mean Daily Return × Trading Days × 100
+        4. Calculate standard deviation of daily returns
+        5. Annualize volatility: Annualized Volatility = Std Dev × √Trading Days × 100
+        6. Apply Sharpe Ratio formula: (Annualized Return - Risk-free Rate) / Annualized Volatility
+        
+        Uses the most recent N years of daily NAV data for each period (1, 3, 5 years).
+        All values are converted to percentages for consistency.
+        
+        Returns:
+            Dictionary with scheme_name and sharpe_ratios data, or None if error occurs.
+            sharpe_ratios is a dictionary mapping year (1, 3, 5) to Sharpe Ratio value or error message.
+        """
+        if self.scheme_data is None:
+            return None
+        
+        historical_data = self.scheme_data['data']
+        sharpe_ratios = {}
+        
+        for year in Constants.SHARPE_RATIO_YEARS:
+            # Calculate required data points for this period
+            required_data_points = year * Constants.TRADING_DAYS_PER_YEAR + 1
+            
+            if len(historical_data) < required_data_points:
+                sharpe_ratios[year] = {
+                    'error': f'Insufficient data (need {required_data_points}, have {len(historical_data)})'
+                }
+                continue
+            
+            # Use only the last N years of data (most recent data)
+            # NAV data is ordered with most recent first (index 0), so we reverse it for chronological order
+            recent_data = historical_data[:required_data_points]
+            chronological_data = list(reversed(recent_data))  # Reverse to get oldest first
+            
+            # Step 1: Calculate daily returns
+            daily_returns = []
+            
+            for i in range(len(chronological_data) - 1):
+                try:
+                    # Data is in chronological order (oldest first)
+                    nav_yesterday = float(chronological_data[i]['nav'])
+                    nav_today = float(chronological_data[i + 1]['nav'])
+                    
+                    if nav_yesterday == 0:
+                        continue
+                    
+                    # Calculate daily return
+                    daily_return = (nav_today - nav_yesterday) / nav_yesterday
+                    daily_returns.append(daily_return)
+                    
+                except (ValueError, KeyError, IndexError, ZeroDivisionError):
+                    continue
+            
+            # Need at least 2 data points to calculate standard deviation
+            if len(daily_returns) < 2:
+                sharpe_ratios[year] = {
+                    'error': 'Insufficient daily data points for Sharpe Ratio calculation'
+                }
+                continue
+            
+            try:
+                # Step 2: Calculate mean of daily returns
+                mean_daily_return = sum(daily_returns) / len(daily_returns)
+                
+                # Step 3: Annualize return (convert to percentage)
+                annualized_return = mean_daily_return * Constants.TRADING_DAYS_PER_YEAR * 100
+                
+                # Step 4: Compute standard deviation of daily returns
+                std_dev_daily = statistics.stdev(daily_returns)
+                
+                # Check for zero standard deviation
+                if std_dev_daily == 0:
+                    sharpe_ratios[year] = {
+                        'error': 'Standard deviation of daily returns is zero'
+                    }
+                    continue
+                
+                # Step 5: Calculate annualized volatility (convert to percentage)
+                annualized_volatility = std_dev_daily * math.sqrt(Constants.TRADING_DAYS_PER_YEAR) * 100
+                
+                # Step 6: Apply formula: Sharpe = (Annualized return - Risk-free rate) / Annualized volatility
+                sharpe_ratio = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
+                
+                sharpe_ratios[year] = round(sharpe_ratio, Constants.DECIMAL_PLACES)
+                
+            except (ValueError, ZeroDivisionError) as e:
+                sharpe_ratios[year] = {
+                    'error': f'Error calculating Sharpe Ratio: {e}'
+                }
+        
+        return {
+            'scheme_name': self.scheme_data['scheme_name'],
+            'sharpe_ratios': sharpe_ratios
+        }
+    
+    def _print_returns(self, rolling_data, calendar_data, sharpe_data):
         """
         Print the returns data for a scheme in a formatted way.
         Internal method.
         
-        Prints rolling returns (min/avg/max CAGR) and calendar year returns
+        Prints rolling returns (min/avg/max CAGR), calendar year returns, and Sharpe Ratio
         in a formatted table format.
         
         Args:
             rolling_data: Dictionary returned by _calculate_rolling_returns(), or None
             calendar_data: Dictionary returned by _calculate_calendar_year_returns(), or None
+            sharpe_data: Dictionary returned by _calculate_sharpe_ratio(), or None
         """
-        if rolling_data is None and calendar_data is None:
+        if rolling_data is None and calendar_data is None and sharpe_data is None:
             return
         
-        scheme_name = rolling_data['scheme_name'] if rolling_data else calendar_data['scheme_name']
+        scheme_name = (
+            rolling_data['scheme_name'] if rolling_data else
+            calendar_data['scheme_name'] if calendar_data else
+            sharpe_data['scheme_name'] if sharpe_data else 'Unknown'
+        )
         
         print(f"\n{scheme_name}")
         print("=" * 60)
@@ -241,6 +350,19 @@ class MutualFundReturnsCalculator:
                     else:
                         print(f"{year}: {return_value}%")
         
+        # Print Sharpe Ratio
+        if sharpe_data:
+            print("\nSharpe Ratio:")
+            print("-" * 60)
+            
+            for year in Constants.SHARPE_RATIO_YEARS:
+                if year in sharpe_data['sharpe_ratios']:
+                    sharpe_value = sharpe_data['sharpe_ratios'][year]
+                    if isinstance(sharpe_value, dict) and 'error' in sharpe_value:
+                        print(f"{year} Year(s): {sharpe_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {sharpe_value}")
+        
         print("=" * 60)
     
     def process_scheme(self):
@@ -258,7 +380,8 @@ class MutualFundReturnsCalculator:
         
         rolling_data = self._calculate_rolling_returns()
         calendar_data = self._calculate_calendar_year_returns()
-        self._print_returns(rolling_data, calendar_data)
+        sharpe_data = self._calculate_sharpe_ratio()
+        self._print_returns(rolling_data, calendar_data, sharpe_data)
 
 
 def main():
@@ -281,8 +404,8 @@ def main():
     scheme_codes = [code.strip() for code in sys.argv[1].split(",")]
     
     for scheme_code in scheme_codes:
-        mf_calculator = MutualFundReturnsCalculator(scheme_code)
-        mf_calculator.process_scheme()
+        mf_analyzer = MutualFundAnalyzer(scheme_code)
+        mf_analyzer.process_scheme()
 
 
 if __name__ == "__main__":
