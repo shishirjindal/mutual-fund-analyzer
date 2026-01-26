@@ -1,8 +1,13 @@
-# Mutual Fund Returns Script
+# Mutual Fund Returns Calculator
 
-This script calculates mutual fund returns using the `mftool` library.
+This script calculates various types of returns for mutual fund schemes using the `mftool` library. It provides rolling returns and calendar year returns analysis.
 
 **Requires Python 3.10+ (tested with Python 3.14.2)**
+
+## Features
+
+- **Rolling Returns**: Calculates CAGR (Compound Annual Growth Rate) for 1, 3, and 5 years with min/average/max statistics
+- **Calendar Year Returns**: Calculates returns for the last 5 calendar years
 
 ## Requirements
 
@@ -20,7 +25,7 @@ python3 --version  # Should show Python 3.14.2
 
 If `python3` points to system Python 3.9.6, use the full path:
 ```bash
-/opt/homebrew/bin/python3 mfReturns.py <function> [arguments]
+/opt/homebrew/bin/python3 mfReturns.py <scheme_codes>
 ```
 
 Install dependencies using one of the following methods:
@@ -44,85 +49,93 @@ Install dependencies using one of the following methods:
 
 Run the script directly (using Homebrew Python 3.14.2):
 ```bash
-python3 mfReturns.py <function> [arguments]
+python3 mfReturns.py <scheme_codes>
 ```
 
 Or make it executable and run directly:
 ```bash
 chmod +x mfReturns.py
-./mfReturns.py <function> [arguments]
+./mfReturns.py <scheme_codes>
 ```
 
 **Note:** If `python3` points to system Python 3.9.6, use the full path:
 ```bash
-/opt/homebrew/bin/python3 mfReturns.py <function> [arguments]
+/opt/homebrew/bin/python3 mfReturns.py <scheme_codes>
 ```
 
-The script supports three functions:
+### Syntax
 
-### 1. Rolling Returns (`rolling-returns`)
-Calculates rolling returns for specified years. Returns min / average / max CAGR (Compound Annual Growth Rate).
-
-**Syntax:**
 ```bash
-python3 mfReturns.py rolling-returns <scheme_codes> <years>
+python3 mfReturns.py <scheme_codes>
 ```
 
 **Parameters:**
 - `scheme_codes`: Comma-separated list of mutual fund scheme codes
-- `years`: Comma-separated list of years (e.g., 1,3,5)
 
 **Example:**
 ```bash
-python3 mfReturns.py rolling-returns 101206,101207 1,3,5
+python3 mfReturns.py 101206,101207
 ```
 
-**Output:** For each scheme and year, displays min / average / max CAGR (Compound Annual Growth Rate).
+### Output
 
----
+For each scheme code, the script displays:
 
-### 2. Point-to-Point Returns (`point-to-point`)
-Calculates returns between two specific dates.
+1. **Rolling Returns (Min / Average / Max CAGR)**:
+   - 1 Year(s): min% / avg% / max%
+   - 3 Year(s): min% / avg% / max%
+   - 5 Year(s): min% / avg% / max%
 
-**Syntax:**
-```bash
-python3 mfReturns.py point-to-point <scheme_code> <initial_date> <final_date>
+2. **Calendar Year Returns**:
+   - Returns for the last 5 calendar years (e.g., 2025, 2024, 2023, 2022, 2021)
+   - Shows percentage return for each year or "N/A" if data is unavailable
+
+**Example Output:**
+```
+Scheme Name
+============================================================
+
+Rolling Returns (Min / Average / Max CAGR):
+------------------------------------------------------------
+1 Year(s): 8.50% / 12.30% / 15.75%
+3 Year(s): 10.20% / 13.45% / 16.80%
+5 Year(s): 11.00% / 14.20% / 17.50%
+
+Calendar Year Returns:
+------------------------------------------------------------
+2025: 12.50%
+2024: 15.30%
+2023: 10.20%
+2022: -5.40%
+2021: 18.75%
+============================================================
 ```
 
-**Parameters:**
-- `scheme_code`: Single mutual fund scheme code
-- `initial_date`: Start date in DD-MM-YYYY format
-- `final_date`: End date in DD-MM-YYYY format
+## Architecture
 
-**Example:**
-```bash
-python3 mfReturns.py point-to-point 101206 01-01-2020 31-12-2023
-```
+The script uses a class-based architecture:
 
-**Output:** Displays the percentage return between the two dates.
+- **`MutualFundReturnsCalculator`**: Main class that handles all calculations
+  - Fetches scheme data during initialization
+  - Calculates rolling returns for 1, 3, and 5 years
+  - Calculates calendar year returns for the last 5 years
+  - Prints formatted results
 
----
+- **`constants.py`**: Contains all configuration constants:
+  - Trading days per year (252)
+  - Rolling years (1, 3, 5)
+  - Calendar years to calculate (5)
+  - Date patterns for NAV lookup
 
-### 3. Calendar Year Returns (`calendar-year`)
-Calculates returns for specific calendar years.
+## Configuration
 
-**Syntax:**
-```bash
-python3 mfReturns.py calendar-year <scheme_codes> <years>
-```
+You can modify constants in `constants.py`:
 
-**Parameters:**
-- `scheme_codes`: Comma-separated list of mutual fund scheme codes
-- `years`: Comma-separated list of calendar years (e.g., 2020,2021,2022)
-
-**Example:**
-```bash
-python3 mfReturns.py calendar-year 101206,101207 2020,2021,2022
-```
-
-**Output:** Displays returns for each year separated by " / ".
-
----
+- `TRADING_DAYS_PER_YEAR`: Number of trading days per year (default: 252)
+- `ROLLING_YEARS`: Years for rolling returns calculation (default: [1, 3, 5])
+- `NUM_CALENDAR_YEARS`: Number of calendar years to calculate (default: 5)
+- `JANUARY_DATE_DAYS`: Days to check for NAV at start of year (default: [1, 2, 3, 4])
+- `DECIMAL_PLACES`: Decimal places for rounding (default: 2)
 
 ## Troubleshooting
 
@@ -138,6 +151,23 @@ This script requires Python 3.10 or higher. Check your Python version:
 python3 --version
 ```
 
-### Date Format
-For `point-to-point` function, dates must be in `DD-MM-YYYY` format (e.g., `01-01-2020`).
+### No Data Found
+If you see "Error: No data found for scheme code", verify:
+- The scheme code is correct
+- The scheme has historical NAV data available
+- Your internet connection is working (mftool fetches data from online sources)
 
+### Insufficient Data
+If you see "Insufficient data" errors for rolling returns:
+- The scheme may not have enough historical data
+- For 5-year rolling returns, you need at least 1,261 data points (5 * 252 + 1)
+
+## File Structure
+
+```
+stockMarketScripts-main/
+├── mfReturns.py          # Main script with MutualFundReturnsCalculator class
+├── constants.py          # Configuration constants
+├── requirements.txt      # Python dependencies
+└── README.md            # This file
+```
