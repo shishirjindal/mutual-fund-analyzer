@@ -13,6 +13,7 @@ class Constants:
     # Trading and calculation constants
     TRADING_DAYS_PER_YEAR = 252
     DECIMAL_PLACES = 2
+    DATE_FORMAT = "%d-%m-%Y"
     
     # Rolling returns configuration
     ROLLING_YEARS = [1, 3, 5]
