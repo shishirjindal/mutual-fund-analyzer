@@ -11,8 +11,8 @@ This script calculates various types of returns for mutual fund schemes:
 
 import sys
 import json
+import numpy as np
 import datetime
-import statistics
 import math
 from mftool import Mftool
 from constants import Constants
@@ -86,7 +86,6 @@ class MutualFundAnalyzer:
     def _calculate_rolling_returns(self):
         """
         Calculate rolling returns for 1, 3 and 5 years using stored scheme data.
-        Internal method.
         
         Returns:
             Dictionary with scheme_name and rolling_returns data, or None if error occurs.
@@ -106,20 +105,21 @@ class MutualFundAnalyzer:
             cagr_values = []
             required_data_points = year * Constants.TRADING_DAYS_PER_YEAR + 1
             
-            if len(historical_data) < required_data_points:
+            if len(historical_data) < 2 * required_data_points:
                 rolling_returns[year] = {
                     'error': f'Insufficient data (need {required_data_points}, have {len(historical_data)})'
                 }
                 continue
             
-            # Calculate rolling returns
+            # Calculate rolling returns.
+            # We start from the end of the data and move backwards.
             for start_index in range(len(historical_data) - required_data_points):
                 try:
                     initial_index = start_index + year * Constants.TRADING_DAYS_PER_YEAR
                     initial_nav = float(historical_data[initial_index]['nav'])
                     final_nav = float(historical_data[start_index]['nav'])
                     
-                    if initial_nav == 0:
+                    if initial_nav == 0 or final_nav == 0:
                         continue
                     
                     absolute_return = (final_nav - initial_nav) * 100 / initial_nav
@@ -135,9 +135,9 @@ class MutualFundAnalyzer:
                 rolling_returns[year] = {'error': 'No valid data points'}
             else:
                 rolling_returns[year] = {
-                    'min': round(min(cagr_values), Constants.DECIMAL_PLACES),
-                    'avg': round(sum(cagr_values) / len(cagr_values), Constants.DECIMAL_PLACES),
-                    'max': round(max(cagr_values), Constants.DECIMAL_PLACES)
+                    'min': round(np.min(cagr_values), Constants.DECIMAL_PLACES),
+                    'avg': round(np.mean(cagr_values), Constants.DECIMAL_PLACES),
+                    'max': round(np.max(cagr_values), Constants.DECIMAL_PLACES)
                 }
         
         return {
@@ -148,7 +148,6 @@ class MutualFundAnalyzer:
     def _calculate_calendar_year_returns(self):
         """
         Calculate calendar year returns for the last 5 years using stored scheme data.
-        Internal method.
         
         For each year, calculates return from earliest available NAV in January to 
         earliest available NAV in January of the next year.
@@ -181,14 +180,14 @@ class MutualFundAnalyzer:
                     if date_pattern in nav_lookup:
                         final_nav = nav_lookup[date_pattern]
                         break
-                
-                # Calculate return
-                if initial_nav > 0 and final_nav > 0:
-                    return_percent = (final_nav - initial_nav) * 100 / initial_nav
-                    calendar_returns[year] = round(return_percent, Constants.DECIMAL_PLACES)
-                else:
+
+                if initial_nav == 0 or final_nav == 0:
                     calendar_returns[year] = None
-                    
+                    continue
+
+                return_percent = (final_nav - initial_nav) * 100 / initial_nav
+                calendar_returns[year] = round(return_percent, Constants.DECIMAL_PLACES)
+
             except (ValueError, KeyError, IndexError, ZeroDivisionError):
                 calendar_returns[year] = None
         
@@ -197,45 +196,52 @@ class MutualFundAnalyzer:
             'calendar_returns': calendar_returns
         }
     
-    def _calculate_sharpe_ratio(self):
+    def _calculate_static_sharpe_ratio(self):
         """
-        Calculate annualized Sharpe Ratio for 1, 3, and 5 years using daily NAV returns.
-        Internal method.
-        
+        Calculate annualized Static Sharpe Ratio.
+        The Static Sharpe Ratio measures the excess return earned per unit of volatility over the entire period.
+
         Calculation methodology for each period:
         1. Compute daily returns from consecutive NAV values
         2. Calculate arithmetic mean of daily returns
-        3. Annualize the mean return: Annualized Return = Mean Daily Return × Trading Days × 100
+        3. Annualize the mean return: Annualized Return = Mean Daily Return x Trading Days x 100
         4. Calculate standard deviation of daily returns
-        5. Annualize volatility: Annualized Volatility = Std Dev × √Trading Days × 100
+        5. Annualize volatility: Annualized Volatility = Std Dev x √Trading Days x 100
         6. Apply Sharpe Ratio formula: (Annualized Return - Risk-free Rate) / Annualized Volatility
+
+        Result interpretation:
+        Static Sharpe   Interpretation  What it actually means
+        -------------   --------------  ----------------------
+        > 1.5           Exceptional     Rare skill or strong market tailwind
+        1.0 - 1.5       Very good       Strong risk-adjusted performance
+        0.7 - 1.0       Good            Acceptable efficiency
+        0.4 - 0.7       Weak            Marginal value add
+        0 - 0.4         Poor            Barely beats risk-free
+        < 0             Bad             Value destruction
         
         Uses the most recent N years of daily NAV data for each period (1, 3, 5 years).
-        All values are converted to percentages for consistency.
+        All values are converted to decimal for consistency.
         
         Returns:
-            Dictionary with scheme_name and sharpe_ratios data, or None if error occurs.
-            sharpe_ratios is a dictionary mapping year (1, 3, 5) to Sharpe Ratio value or error message.
+            Dictionary with scheme_name and static_sharpe_ratios data, or None if error occurs.
+            static_sharpe_ratios is a dictionary mapping year to Sharpe Ratio value or error message.
         """
         if self.scheme_data is None:
             return None
         
         historical_data = self.scheme_data['data']
-        sharpe_ratios = {}
+        static_sharpe_ratios = {}
         
-        for year in Constants.SHARPE_RATIO_YEARS:
-            # Calculate required data points for this period
-            required_data_points = year * Constants.TRADING_DAYS_PER_YEAR + 1
-            
-            if len(historical_data) < required_data_points:
-                sharpe_ratios[year] = {
-                    'error': f'Insufficient data (need {required_data_points}, have {len(historical_data)})'
-                }
-                continue
+        for year in Constants.STATIC_SHARPE_RATIO_YEARS:
+            end_date = datetime.datetime.strptime(historical_data[0]['date'], "%d-%m-%Y")
+            start_date = end_date - datetime.timedelta(days=365 * year)
             
             # Use only the last N years of data (most recent data)
             # NAV data is ordered with most recent first (index 0), so we reverse it for chronological order
-            recent_data = historical_data[:required_data_points]
+            recent_data = [
+                d for d in historical_data
+                if datetime.datetime.strptime(d['date'], "%d-%m-%Y") >= start_date
+            ]
             chronological_data = list(reversed(recent_data))  # Reverse to get oldest first
             
             # Step 1: Calculate daily returns
@@ -247,7 +253,7 @@ class MutualFundAnalyzer:
                     nav_yesterday = float(chronological_data[i]['nav'])
                     nav_today = float(chronological_data[i + 1]['nav'])
                     
-                    if nav_yesterday == 0:
+                    if nav_yesterday == 0 or nav_today == 0:
                         continue
                     
                     # Calculate daily return
@@ -259,66 +265,222 @@ class MutualFundAnalyzer:
             
             # Need at least 2 data points to calculate standard deviation
             if len(daily_returns) < 2:
-                sharpe_ratios[year] = {
+                static_sharpe_ratios[year] = {
                     'error': 'Insufficient daily data points for Sharpe Ratio calculation'
                 }
                 continue
             
             try:
                 # Step 2: Calculate mean of daily returns
-                mean_daily_return = sum(daily_returns) / len(daily_returns)
+                mean_daily_return = np.mean(daily_returns)
                 
                 # Step 3: Annualize return (convert to percentage)
-                annualized_return = mean_daily_return * Constants.TRADING_DAYS_PER_YEAR * 100
+                annualized_return = mean_daily_return * Constants.TRADING_DAYS_PER_YEAR
                 
-                # Step 4: Compute standard deviation of daily returns
-                std_dev_daily = statistics.stdev(daily_returns)
+                # Step 4: Compute population standard deviation of daily returns
+                std_dev_daily = np.std(daily_returns, ddof=0)
                 
                 # Check for zero standard deviation
                 if std_dev_daily == 0:
-                    sharpe_ratios[year] = {
+                    static_sharpe_ratios[year] = {
                         'error': 'Standard deviation of daily returns is zero'
                     }
                     continue
                 
                 # Step 5: Calculate annualized volatility (convert to percentage)
-                annualized_volatility = std_dev_daily * math.sqrt(Constants.TRADING_DAYS_PER_YEAR) * 100
+                annualized_volatility = std_dev_daily * math.sqrt(Constants.TRADING_DAYS_PER_YEAR)
                 
                 # Step 6: Apply formula: Sharpe = (Annualized return - Risk-free rate) / Annualized volatility
                 sharpe_ratio = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
                 
-                sharpe_ratios[year] = round(sharpe_ratio, Constants.DECIMAL_PLACES)
+                static_sharpe_ratios[year] = round(sharpe_ratio, Constants.DECIMAL_PLACES)
                 
             except (ValueError, ZeroDivisionError) as e:
-                sharpe_ratios[year] = {
+                static_sharpe_ratios[year] = {
                     'error': f'Error calculating Sharpe Ratio: {e}'
                 }
         
         return {
             'scheme_name': self.scheme_data['scheme_name'],
-            'sharpe_ratios': sharpe_ratios
+            'static_sharpe_ratios': static_sharpe_ratios
         }
     
-    def _print_returns(self, rolling_data, calendar_data, sharpe_data):
+    def _calculate_rolling_sharpe_ratio(self):
+        """
+        Calculate rolling Sharpe Ratio.
+        A rolling Sharpe ratio measures an investment's risk-adjusted return over a moving, fixed-length time window rather than a single static period.
+
+        Result interpretation:
+        
+        1. Median Rolling Sharpe (primary quality metric)
+        Median Rolling Sharpe   Interpretation  Meaning
+        ---------------------   --------------  -------
+        > 1.0                   Excellent       Strong, repeatable risk-adjusted performance
+        0.7 - 1.0               Very Good       Consistent value creation
+        0.4 - 0.7               Acceptable      Moderate fund quality
+        0.2 - 0.4               Weak            Marginal risk-adjusted returns
+        0 - 0.2                 Poor            Barely beats risk-free
+        < 0                     Bad             Risk-adjusted value destruction
+
+        2. Percentage of Time Rolling Sharpe > 0 (consistency)
+        % Time Sharpe > 0       Interpretation  Meaning
+        -----------------       --------------  -------
+        > 75%                   Excellent       Adds value most of the time
+        65 - 75%                Good            Reliable performance
+        55 - 65%                Borderline      Inconsistent
+        45 - 55%                Weak            Random-like behavior
+        < 45%                   Poor            Unreliable fund
+
+        3. 10th Percentile Rolling Sharpe (downside behavior)
+        10th Percentile Sharpe  Interpretation  Meaning
+        ----------------------  --------------  -------
+        > 0                     Excellent       No destructive regimes
+        0 to -0.3               Acceptable      Mild stress periods
+        -0.3 to -0.6            Weak            Painful drawdowns
+        < -0.6                  Poor            Severe downside risk
+
+        4. Latest Rolling Sharpe (current regime indicator)
+        Latest Rolling Sharpe   Interpretation  Action
+        ---------------------   --------------  ------
+        > 0.7                   Strong          Add / Hold
+        0.3 - 0.7               Stable          Hold
+        0 - 0.3                 Weak            Monitor
+        < 0                     Negative        Avoid fresh investment / Review
+
+        5. Mean vs Median Rolling Sharpe (stability check)
+        Mean - Median           Interpretation  Insight
+        -------------           --------------  -------
+        approx 0                Stable          Consistent performance
+        Positive                Skewed          Few good periods inflate average
+        Negative                Deteriorating   Recent performance weakening
+        
+        Returns:
+            Dictionary with scheme_name and rolling_sharpe_ratios data, or None if error occurs.
+            rolling_sharpe_ratios is a list of dictionaries with:
+            - 'total_data': total years of data considered
+            - 'rolling_window': window size in years
+            - 'median': median Sharpe Ratio
+            - 'mean': mean Sharpe Ratio
+            - 'positive_share': percentage of time Sharpe Ratio > 0
+            - 'percentile_10': 10th percentile Sharpe Ratio
+            - 'latest': latest rolling Sharpe Ratio
+            - 'error': error message if calculation failed
+        """
+        if self.scheme_data is None:
+            return None
+        
+        historical_data = self.scheme_data['data']
+        rolling_sharpe_ratios = []
+        
+        for config in Constants.ROLLING_SHARPE_RATIO_MAP:
+            total_years = config['total_data']
+            window_years = config['rolling_window']
+            
+            # Calculate start date for data filtering
+            end_date = datetime.datetime.strptime(historical_data[0]['date'], "%d-%m-%Y")
+            start_date = end_date - datetime.timedelta(days=365 * total_years)
+            
+            # Filter data
+            relevant_data = [
+                d for d in historical_data
+                if datetime.datetime.strptime(d['date'], "%d-%m-%Y") >= start_date
+            ]
+            chronological_data = list(reversed(relevant_data))
+            
+            # Calculate daily returns
+            daily_returns = []
+            for i in range(len(chronological_data) - 1):
+                try:
+                    nav_yesterday = float(chronological_data[i]['nav'])
+                    nav_today = float(chronological_data[i + 1]['nav'])
+                    
+                    if nav_yesterday == 0 or nav_today == 0:
+                        continue
+                        
+                    daily_return = (nav_today - nav_yesterday) / nav_yesterday
+                    daily_returns.append(daily_return)
+                except (ValueError, KeyError, IndexError, ZeroDivisionError):
+                    continue
+            
+            # Define window size (trading days)
+            window_size = window_years * Constants.TRADING_DAYS_PER_YEAR
+            
+            if len(daily_returns) < window_size:
+                rolling_sharpe_ratios.append({
+                    'total_data': total_years,
+                    'rolling_window': window_years,
+                    'error': f'Insufficient data (need {window_size} days, have {len(daily_returns)})'
+                })
+                continue
+            
+            # Calculate rolling Sharpe Ratios
+            window_sharpes = []
+            for i in range(len(daily_returns) - window_size + 1):
+                window = daily_returns[i : i + window_size]
+                
+                if not window:
+                    continue
+                
+                # Check for zero variance to avoid division by zero
+                std_dev = np.std(window, ddof=0)
+                if std_dev == 0:
+                    continue
+                
+                mean_return = np.mean(window)
+                annualized_return = mean_return * Constants.TRADING_DAYS_PER_YEAR
+                annualized_volatility = std_dev * math.sqrt(Constants.TRADING_DAYS_PER_YEAR)
+                
+                sharpe = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
+                window_sharpes.append(sharpe)
+            
+            if not window_sharpes:
+                rolling_sharpe_ratios.append({
+                    'total_data': total_years,
+                    'rolling_window': window_years,
+                    'error': 'Could not calculate valid Sharpe Ratios'
+                })
+            else:
+                median_val = round(np.median(window_sharpes), Constants.DECIMAL_PLACES)
+                mean_val = round(np.mean(window_sharpes), Constants.DECIMAL_PLACES)
+                percentile_10_val = round(np.percentile(window_sharpes, 10), Constants.DECIMAL_PLACES)
+                latest_val = round(window_sharpes[-1], Constants.DECIMAL_PLACES)
+
+                rolling_sharpe_ratios.append({
+                    'total_data': total_years,
+                    'rolling_window': window_years,
+                    'median': median_val,
+                    'mean': mean_val,
+                    'positive_share': round((len([s for s in window_sharpes if s > 0]) / len(window_sharpes)) * 100, Constants.DECIMAL_PLACES),
+                    'percentile_10': percentile_10_val,
+                    'latest': latest_val
+                })
+        
+        return {
+            'scheme_name': self.scheme_data['scheme_name'],
+            'rolling_sharpe_ratios': rolling_sharpe_ratios
+        }
+    
+    def _print_returns(self, rolling_data, calendar_data, static_sharpe_data, rolling_sharpe_data=None):
         """
         Print the returns data for a scheme in a formatted way.
-        Internal method.
         
-        Prints rolling returns (min/avg/max CAGR), calendar year returns, and Sharpe Ratio
-        in a formatted table format.
+        Prints rolling returns (min/avg/max CAGR), calendar year returns, Sharpe Ratio,
+        and Rolling Sharpe Ratio in a formatted table format.
         
         Args:
             rolling_data: Dictionary returned by _calculate_rolling_returns(), or None
             calendar_data: Dictionary returned by _calculate_calendar_year_returns(), or None
-            sharpe_data: Dictionary returned by _calculate_sharpe_ratio(), or None
+            static_sharpe_data: Dictionary returned by _calculate_static_sharpe_ratio(), or None
+            rolling_sharpe_data: Dictionary returned by _calculate_rolling_sharpe_ratio(), or None
         """
-        if rolling_data is None and calendar_data is None and sharpe_data is None:
+        if rolling_data is None and calendar_data is None and static_sharpe_data is None and rolling_sharpe_data is None:
             return
         
         scheme_name = (
             rolling_data['scheme_name'] if rolling_data else
             calendar_data['scheme_name'] if calendar_data else
-            sharpe_data['scheme_name'] if sharpe_data else 'Unknown'
+            static_sharpe_data['scheme_name'] if static_sharpe_data else
+            rolling_sharpe_data['scheme_name'] if rolling_sharpe_data else 'Unknown'
         )
         
         print(f"\n{scheme_name}")
@@ -351,17 +513,34 @@ class MutualFundAnalyzer:
                         print(f"{year}: {return_value}%")
         
         # Print Sharpe Ratio
-        if sharpe_data:
+        if static_sharpe_data:
             print("\nSharpe Ratio:")
             print("-" * 60)
             
-            for year in Constants.SHARPE_RATIO_YEARS:
-                if year in sharpe_data['sharpe_ratios']:
-                    sharpe_value = sharpe_data['sharpe_ratios'][year]
+            for year in Constants.STATIC_SHARPE_RATIO_YEARS:
+                if year in static_sharpe_data['static_sharpe_ratios']:
+                    sharpe_value = static_sharpe_data['static_sharpe_ratios'][year]
                     if isinstance(sharpe_value, dict) and 'error' in sharpe_value:
                         print(f"{year} Year(s): {sharpe_value['error']}")
                     else:
                         print(f"{year} Year(s): {sharpe_value}")
+
+        # Print Rolling Sharpe Ratio
+        if rolling_sharpe_data:
+            print("\nRolling Sharpe Ratio:")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
+            print("-" * 80)
+            
+            for item in rolling_sharpe_data['rolling_sharpe_ratios']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
         
         print("=" * 60)
     
@@ -380,8 +559,9 @@ class MutualFundAnalyzer:
         
         rolling_data = self._calculate_rolling_returns()
         calendar_data = self._calculate_calendar_year_returns()
-        sharpe_data = self._calculate_sharpe_ratio()
-        self._print_returns(rolling_data, calendar_data, sharpe_data)
+        static_sharpe_data = self._calculate_static_sharpe_ratio()
+        rolling_sharpe_data = self._calculate_rolling_sharpe_ratio()
+        self._print_returns(rolling_data, calendar_data, static_sharpe_data, rolling_sharpe_data)
 
 
 def main():

@@ -16,6 +16,24 @@ class Constants:
     
     # Rolling returns configuration
     ROLLING_YEARS = [1, 3, 5]
+
+    # Risk-free rate in decimal format
+    RISK_FREE_RATE = 0.065
+    
+    # Static Sharpe ratio configuration
+    STATIC_SHARPE_RATIO_YEARS = [1, 3, 5]
+
+    # Rolling Sharpe ratio configuration
+    ROLLING_SHARPE_RATIO_MAP = [
+        {
+            'total_data': 5,
+            'rolling_window': 1,
+        },
+        {
+            'total_data': 10,
+            'rolling_window': 3,
+        },
+    ]
     
     # Calendar year returns configuration
     NUM_CALENDAR_YEARS = 5
