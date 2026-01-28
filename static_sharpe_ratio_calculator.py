@@ -1,14 +1,14 @@
-import numpy as np
-import datetime
+import pandas as pd
 import math
+from typing import Dict, Any, Optional
 from constants import Constants
 from utils import Utils
 
 class StaticSharpeRatioCalculator:
-    """Calculates static Sharpe Ratio for mutual funds."""
+    """Calculates static Sharpe Ratio for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data):
+    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
         Calculate annualized Static Sharpe Ratio.
         
@@ -18,61 +18,65 @@ class StaticSharpeRatioCalculator:
         Returns:
             Dictionary with scheme_name and static_sharpe_ratios data, or None if error occurs.
         """
-        if scheme_data is None:
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
             return None
         
-        historical_data = scheme_data['data']
         static_sharpe_ratios = {}
+        end_date = df.index[-1]
         
         for year in Constants.STATIC_SHARPE_RATIO_YEARS:
-            end_date = datetime.datetime.strptime(historical_data[0]['date'], Constants.DATE_FORMAT)
-            start_date = end_date - datetime.timedelta(days=365 * year)
+            start_date = end_date - pd.Timedelta(days=365 * year)
             
-            # Use only the last N years of data (most recent data)
-            recent_data = [
-                d for d in historical_data
-                if datetime.datetime.strptime(d['date'], Constants.DATE_FORMAT) >= start_date
-            ]
-            chronological_data = list(reversed(recent_data))  # Reverse to get oldest first
+            # Filter DataFrame
+            relevant_df = df[df.index >= start_date].copy()
             
-            # Step 1: Calculate daily returns
-            daily_returns = Utils.calculate_daily_returns(chronological_data)
-            
-            # Need at least 2 data points to calculate standard deviation
-            if len(daily_returns) < 2:
+            if relevant_df.empty or len(relevant_df) < 2:
                 static_sharpe_ratios[year] = {
                     'error': 'Insufficient daily data points for Sharpe Ratio calculation'
                 }
                 continue
             
             try:
-                # Step 2: Calculate mean of daily returns
-                mean_daily_return = np.mean(daily_returns)
+                # Calculate daily returns
+                daily_returns = relevant_df['nav'].pct_change().dropna()
                 
-                # Step 3: Annualize return (convert to percentage)
+                if daily_returns.empty:
+                    static_sharpe_ratios[year] = {
+                        'error': 'Insufficient valid returns for Sharpe Ratio calculation'
+                    }
+                    continue
+
+                # Calculate mean of daily returns
+                mean_daily_return = daily_returns.mean()
+                
+                # Annualize return (convert to percentage)
+                # We multiply by trading days to get annualized return from daily average.
+                # Note: This approximation (arithmetic mean * days) is standard for Sharpe Ratio,
+                # even though CAGR is preferred for returns.
                 annualized_return = mean_daily_return * Constants.TRADING_DAYS_PER_YEAR
                 
-                # Step 4: Compute population standard deviation of daily returns
-                std_dev_daily = np.std(daily_returns, ddof=0)
+                # Calculate population standard deviation of daily returns
+                # We use ddof=0 for population standard deviation
+                std_dev_daily = daily_returns.std(ddof=0)
                 
-                # Check for zero standard deviation
                 if std_dev_daily == 0:
                     static_sharpe_ratios[year] = {
                         'error': 'Standard deviation of daily returns is zero'
                     }
                     continue
                 
-                # Step 5: Calculate annualized volatility (convert to percentage)
+                # Annualize volatility
                 annualized_volatility = std_dev_daily * math.sqrt(Constants.TRADING_DAYS_PER_YEAR)
                 
-                # Step 6: Apply formula: Sharpe = (Annualized return - Risk-free rate) / Annualized volatility
+                # Calculate Sharpe Ratio
                 sharpe_ratio = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
                 
                 static_sharpe_ratios[year] = round(sharpe_ratio, Constants.DECIMAL_PLACES)
                 
-            except (ValueError, ZeroDivisionError) as e:
+            except Exception as e:
                 static_sharpe_ratios[year] = {
-                    'error': f'Error calculating Sharpe Ratio: {e}'
+                    'error': f'Error calculating Sharpe Ratio: {str(e)}'
                 }
         
         return {

@@ -1,12 +1,14 @@
+import pandas as pd
 import numpy as np
+from typing import Dict, Any, Optional
 from constants import Constants
 from utils import Utils
 
 class RollingReturnsCalculator:
-    """Calculates rolling returns for mutual funds."""
+    """Calculates rolling returns for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data):
+    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
         Calculate rolling returns for 1, 3 and 5 years using stored scheme data.
         
@@ -16,50 +18,54 @@ class RollingReturnsCalculator:
         Returns:
             Dictionary with scheme_name and rolling_returns data, or None if error occurs.
         """
-        if scheme_data is None:
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
             return None
         
-        historical_data = scheme_data['data']
         rolling_returns = {}
         
         for year in Constants.ROLLING_YEARS:
-            cagr_values = []
-            required_data_points = year * Constants.TRADING_DAYS_PER_YEAR + 1
+            days = year * Constants.TRADING_DAYS_PER_YEAR
             
-            if len(historical_data) < 2 * required_data_points:
+            # Check if we have enough data points (approximate check)
+            # Need at least 'days' points to calculate one rolling return
+            if len(df) <= days:
                 rolling_returns[year] = {
-                    'error': f'Insufficient data (need {required_data_points}, have {len(historical_data)})'
+                    'error': f'Insufficient data (need {days} days, have {len(df)})'
                 }
                 continue
             
-            # Calculate rolling returns.
-            # We start from the end of the data and move backwards.
-            for start_index in range(len(historical_data) - required_data_points):
-                try:
-                    initial_index = start_index + year * Constants.TRADING_DAYS_PER_YEAR
-                    initial_nav = float(historical_data[initial_index]['nav'])
-                    final_nav = float(historical_data[start_index]['nav'])
-                    
-                    if initial_nav == 0 or final_nav == 0:
-                        continue
-                    
-                    absolute_return = (final_nav - initial_nav) * 100 / initial_nav
-                    cagr = Utils.calculate_cagr(absolute_return, year)
-                    cagr_values.append(cagr)
-                    
-                except (ValueError, KeyError, IndexError, ZeroDivisionError):
-                    continue
-                except Exception:
-                    continue
+            # Calculate absolute return over 'days' period
+            # pct_change computes (current - shifted) / shifted
+            # We want percentage, so multiply by 100
+            # This is a vectorized operation, much faster than looping
+            absolute_returns = df['nav'].pct_change(periods=days) * 100
             
-            if len(cagr_values) == 0:
+            # Check for and handle infinite values (e.g., division by zero)
+            import numpy as np
+            absolute_returns.replace([np.inf, -np.inf], np.nan, inplace=True)
+            
+            # Drop NaN values (first 'days' rows will be NaN because of shift)
+            valid_returns = absolute_returns.dropna()
+            
+            # Filter out invalid returns (<= -100%) which would cause math errors in CAGR
+            # or imply impossible negative prices
+            valid_returns = valid_returns[valid_returns > -100]
+            
+            if valid_returns.empty:
                 rolling_returns[year] = {'error': 'No valid data points'}
-            else:
-                rolling_returns[year] = {
-                    'min': round(np.min(cagr_values), Constants.DECIMAL_PLACES),
-                    'avg': round(np.mean(cagr_values), Constants.DECIMAL_PLACES),
-                    'max': round(np.max(cagr_values), Constants.DECIMAL_PLACES)
-                }
+                continue
+                
+            # Calculate CAGR for each rolling return
+            # Formula: ((1 + abs_ret/100)^(1/years) - 1) * 100
+            # We can vectorize this using pandas
+            cagr_values = ((1 + valid_returns / 100) ** (1 / year) - 1) * 100
+            
+            rolling_returns[year] = {
+                'min': round(cagr_values.min(), Constants.DECIMAL_PLACES),
+                'avg': round(cagr_values.mean(), Constants.DECIMAL_PLACES),
+                'max': round(cagr_values.max(), Constants.DECIMAL_PLACES)
+            }
         
         return {
             'scheme_name': scheme_data['scheme_name'],

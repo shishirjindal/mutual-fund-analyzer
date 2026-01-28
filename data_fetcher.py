@@ -1,5 +1,6 @@
 import json
 from mftool import Mftool
+from typing import Dict, Any, Optional
 
 class SchemeDataFetcher:
     """
@@ -9,7 +10,7 @@ class SchemeDataFetcher:
     """
     
     @staticmethod
-    def fetch_scheme_data(scheme_code):
+    def fetch_scheme_data(scheme_code: str) -> Optional[Dict[str, Any]]:
         """
         Fetch historical NAV data for the scheme.
         
@@ -17,7 +18,8 @@ class SchemeDataFetcher:
             scheme_code: Mutual fund scheme code
             
         Returns:
-            Dictionary containing scheme data, or None if error occurs
+            Dictionary containing scheme data with keys 'meta' (scheme details) and 
+            'data' (list of NAV entries), or None if error occurs.
         """
         mf_tool = Mftool()
         try:

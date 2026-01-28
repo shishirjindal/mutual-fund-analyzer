@@ -1,14 +1,14 @@
-import numpy as np
-import datetime
+import pandas as pd
 import math
+from typing import Dict, Any, Optional
 from constants import Constants
 from utils import Utils
 
 class StaticStandardDeviationCalculator:
-    """Calculates annualized static standard deviation (volatility) for mutual funds."""
+    """Calculates annualized static standard deviation (volatility) for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data):
+    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
         Calculate annualized Static Standard Deviation for 1, 3, and 5 years.
         
@@ -18,47 +18,48 @@ class StaticStandardDeviationCalculator:
         Returns:
             Dictionary with scheme_name and std_devs data, or None if error occurs.
         """
-        if scheme_data is None:
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
             return None
         
-        historical_data = scheme_data['data']
         std_devs = {}
+        end_date = df.index[-1]
         
-        # We use the STATIC_STANDARD_DEVIATION_YEARS constant
         for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
-            end_date = datetime.datetime.strptime(historical_data[0]['date'], Constants.DATE_FORMAT)
-            start_date = end_date - datetime.timedelta(days=365 * year)
+            start_date = end_date - pd.Timedelta(days=365 * year)
             
-            # Use only the last N years of data (most recent data)
-            recent_data = [
-                d for d in historical_data
-                if datetime.datetime.strptime(d['date'], Constants.DATE_FORMAT) >= start_date
-            ]
-            chronological_data = list(reversed(recent_data))  # Reverse to get oldest first
+            # Filter DataFrame
+            relevant_df = df[df.index >= start_date].copy()
             
-            # Step 1: Calculate daily returns
-            daily_returns = Utils.calculate_daily_returns(chronological_data)
-            
-            # Need at least 2 data points to calculate standard deviation
-            if len(daily_returns) < 2:
+            if relevant_df.empty or len(relevant_df) < 2:
                 std_devs[year] = {
                     'error': 'Insufficient daily data points for Standard Deviation calculation'
                 }
                 continue
             
             try:
-                # Step 2: Compute population standard deviation of daily returns
-                std_dev_daily = np.std(daily_returns, ddof=0)
+                # Calculate daily returns
+                daily_returns = relevant_df['nav'].pct_change().dropna()
                 
-                # Step 3: Calculate annualized volatility (standard deviation)
-                # Annualized Volatility = Daily Std Dev * sqrt(Trading Days) * 100 (for percentage)
+                if daily_returns.empty:
+                    std_devs[year] = {
+                        'error': 'Insufficient valid returns for Standard Deviation calculation'
+                    }
+                    continue
+
+                # Calculate population standard deviation of daily returns
+                # We use ddof=0 for population standard deviation (default is ddof=1 for sample)
+                std_dev_daily = daily_returns.std(ddof=0)
+                
+                # Annualize volatility
+                # Annualized Volatility = Daily Std Dev * Sqrt(Trading Days)
                 annualized_volatility = std_dev_daily * math.sqrt(Constants.TRADING_DAYS_PER_YEAR) * 100
                 
                 std_devs[year] = round(annualized_volatility, Constants.DECIMAL_PLACES)
                 
-            except (ValueError, ZeroDivisionError) as e:
+            except Exception as e:
                 std_devs[year] = {
-                    'error': f'Error calculating Standard Deviation: {e}'
+                    'error': f'Error calculating Standard Deviation: {str(e)}'
                 }
         
         return {

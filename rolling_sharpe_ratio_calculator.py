@@ -1,14 +1,14 @@
-import numpy as np
-import datetime
+import pandas as pd
 import math
+from typing import Dict, Any, Optional
 from constants import Constants
 from utils import Utils
 
 class RollingSharpeRatioCalculator:
-    """Calculates rolling Sharpe Ratio for mutual funds."""
+    """Calculates rolling Sharpe Ratio for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data):
+    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
         Calculate rolling Sharpe Ratio.
         
@@ -18,29 +18,34 @@ class RollingSharpeRatioCalculator:
         Returns:
             Dictionary with scheme_name and rolling_sharpe_ratios data, or None if error occurs.
         """
-        if scheme_data is None:
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
             return None
         
-        historical_data = scheme_data['data']
         rolling_sharpe_ratios = []
         
         for config in Constants.ROLLING_SHARPE_RATIO_MAP:
             total_years = config['total_data']
             window_years = config['rolling_window']
             
-            # Calculate start date for data filtering
-            end_date = datetime.datetime.strptime(historical_data[0]['date'], Constants.DATE_FORMAT)
-            start_date = end_date - datetime.timedelta(days=365 * total_years)
+            # Filter data for the total years required
+            # Calculate start date
+            end_date = df.index[-1]
+            start_date = end_date - pd.Timedelta(days=365 * total_years)
             
-            # Filter data
-            relevant_data = [
-                d for d in historical_data
-                if datetime.datetime.strptime(d['date'], Constants.DATE_FORMAT) >= start_date
-            ]
-            chronological_data = list(reversed(relevant_data))
+            # Filter DataFrame
+            relevant_df = df[df.index >= start_date].copy()
             
+            if relevant_df.empty:
+                rolling_sharpe_ratios.append({
+                    'total_data': total_years,
+                    'rolling_window': window_years,
+                    'error': f'Insufficient data for {total_years} years'
+                })
+                continue
+
             # Calculate daily returns
-            daily_returns = Utils.calculate_daily_returns(chronological_data)
+            daily_returns = relevant_df['nav'].pct_change()
             
             # Define window size (trading days)
             window_size = window_years * Constants.TRADING_DAYS_PER_YEAR
@@ -53,46 +58,39 @@ class RollingSharpeRatioCalculator:
                 })
                 continue
             
-            # Calculate rolling Sharpe Ratios
-            window_sharpes = []
-            for i in range(len(daily_returns) - window_size + 1):
-                window = daily_returns[i : i + window_size]
-                
-                if not window:
-                    continue
-                
-                # Check for zero variance to avoid division by zero
-                std_dev = np.std(window, ddof=0)
-                if std_dev == 0:
-                    continue
-                
-                mean_return = np.mean(window)
-                annualized_return = mean_return * Constants.TRADING_DAYS_PER_YEAR
-                annualized_volatility = std_dev * math.sqrt(Constants.TRADING_DAYS_PER_YEAR)
-                
-                sharpe = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
-                window_sharpes.append(sharpe)
+            # Calculate rolling mean and standard deviation
+            # ddof=0 for population standard deviation
+            rolling_mean = daily_returns.rolling(window=window_size).mean()
+            rolling_std = daily_returns.rolling(window=window_size).std(ddof=0)
             
-            if not window_sharpes:
+            # Annualize
+            # Annualized Return = Daily Mean * Trading Days
+            # Annualized Volatility = Daily Std Dev * Sqrt(Trading Days)
+            annualized_return = rolling_mean * Constants.TRADING_DAYS_PER_YEAR
+            annualized_volatility = rolling_std * math.sqrt(Constants.TRADING_DAYS_PER_YEAR)
+            
+            # Calculate Sharpe Ratio
+            # Avoid division by zero
+            sharpe_ratios = (annualized_return - Constants.RISK_FREE_RATE) / annualized_volatility
+            
+            # Drop NaNs and infinite values
+            valid_sharpes = sharpe_ratios.replace([float('inf'), -float('inf')], float('nan')).dropna()
+            
+            if valid_sharpes.empty:
                 rolling_sharpe_ratios.append({
                     'total_data': total_years,
                     'rolling_window': window_years,
                     'error': 'Could not calculate valid Sharpe Ratios'
                 })
             else:
-                median_val = round(np.median(window_sharpes), Constants.DECIMAL_PLACES)
-                mean_val = round(np.mean(window_sharpes), Constants.DECIMAL_PLACES)
-                percentile_10_val = round(np.percentile(window_sharpes, 10), Constants.DECIMAL_PLACES)
-                latest_val = round(window_sharpes[-1], Constants.DECIMAL_PLACES)
-
                 rolling_sharpe_ratios.append({
                     'total_data': total_years,
                     'rolling_window': window_years,
-                    'median': median_val,
-                    'mean': mean_val,
-                    'positive_share': round((len([s for s in window_sharpes if s > 0]) / len(window_sharpes)) * 100, Constants.DECIMAL_PLACES),
-                    'percentile_10': percentile_10_val,
-                    'latest': latest_val
+                    'median': round(valid_sharpes.median(), Constants.DECIMAL_PLACES),
+                    'mean': round(valid_sharpes.mean(), Constants.DECIMAL_PLACES),
+                    'positive_share': round((valid_sharpes > 0).mean() * 100, Constants.DECIMAL_PLACES),
+                    'percentile_10': round(valid_sharpes.quantile(0.10), Constants.DECIMAL_PLACES),
+                    'latest': round(valid_sharpes.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         
         return {

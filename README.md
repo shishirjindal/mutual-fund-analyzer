@@ -28,6 +28,16 @@ The project is modularized into the following components:
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
 - **`constants.py`**: Defines configuration constants (e.g., trading days, risk-free rate, date formats).
 
+## Technical Implementation Details
+
+- **Type Safety**: The codebase is fully type-hinted using Python's `typing` module for better code quality and developer experience.
+- **Vectorized Calculations**: Uses `pandas` and `numpy` for efficient, vectorized financial calculations instead of slow loops.
+- **Robustness**: Includes comprehensive error handling for:
+  - Missing or insufficient data points
+  - Zero or invalid NAV values
+  - Infinite returns or division-by-zero scenarios
+- **Standardization**: Centralized logic for daily returns and data processing in `utils.py` ensures consistency across all metrics.
+
 ## Requirements
 
 - Python 3.10 or higher (Python 3.14.2 recommended)
@@ -98,22 +108,59 @@ python3 mutual_fund_analyzer.py 101206,101207
 
 ### Output
 
-For each scheme code, the script displays:
+The script prints a detailed analysis for each scheme code provided:
 
-1. **Rolling Returns (Min / Average / Max CAGR)**:
-   - 1 Year(s): min% / avg% / max%
-   - 3 Year(s): min% / avg% / max%
-   - 5 Year(s): min% / avg% / max%
+```text
+Axis Large Cap Fund - Regular Plan - Growth
+============================================================
 
-2. **Calendar Year Returns**:
-   - Returns for the last 5 calendar years (e.g., 2025, 2024, 2023, 2022, 2021)
-   - Shows percentage return for each year or "N/A" if data is unavailable
+Rolling Returns (Min / Average / Max CAGR):
+------------------------------------------------------------
+1 Year(s): -23.51% / 13.34% / 63.12%
+3 Year(s): 1.21% / 13.66% / 30.59%
+5 Year(s): 3.45% / 13.99% / 21.05%
 
-3. **Sharpe Ratio**:
-   - Annualized Sharpe Ratio for 1, 3, and 5 years
-   - Calculated using daily returns and annualized
-   - Formula: (Annualized Return - Risk-free Rate) / Annualized Volatility
+Calendar Year Returns:
+------------------------------------------------------------
+2025: 6.23%
+2024: 14.29%
+2023: 17.04%
+2022: -6.89%
+2021: 22.36%
 
-4. **Rolling Sharpe Ratio**:
-   - Rolling metrics for different windows (e.g., 1-year rolling window over 5 years data)
-   - Metrics: Median, Mean, 10th Percentile, Latest value, % of positive periods
+Static Standard Deviation (Annualized Volatility %):
+------------------------------------------------------------
+1 Year(s): 10.86%
+3 Year(s): 11.17%
+5 Year(s): 13.19%
+
+Rolling Standard Deviation (Volatility %):
+------------------------------------------------------------
+Window     Data       Median     Mean       Min        Max        Latest    
+--------------------------------------------------------------------------------
+1          5          12.7       12.88      8.74       17.44      10.89     
+3          10         14.46      15.22      11.1       19.72      11.18     
+
+Sharpe Ratio:
+------------------------------------------------------------
+1 Year(s): 0.18
+3 Year(s): 0.55
+5 Year(s): 0.31
+
+Rolling Sharpe Ratio:
+------------------------------------------------------------
+Window     Data       Median     Mean       10%ile     Latest     % > 0   
+--------------------------------------------------------------------------------
+1          5          0.06       0.31       -0.71      0.1        53.41   
+3          10         0.49       0.5        0.21       0.42       99.71   
+============================================================
+```
+
+### Metrics Explained
+
+1. **Rolling Returns**: Compound Annual Growth Rate (CAGR) over moving windows (1, 3, 5 years).
+2. **Calendar Year Returns**: Absolute returns for specific calendar years (Jan 1st to Jan 1st).
+3. **Static Standard Deviation**: Annualized volatility calculated from daily returns over fixed periods.
+4. **Rolling Standard Deviation**: Distribution of annualized volatility over moving windows.
+5. **Static Sharpe Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Volatility).
+6. **Rolling Sharpe Ratio**: Distribution of Sharpe Ratio over moving windows.

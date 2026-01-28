@@ -1,12 +1,15 @@
+import pandas as pd
+from typing import Dict, Any, List, Optional
 from constants import Constants
+from utils import Utils
 
 class CalendarYearReturnsCalculator:
-    """Calculates calendar year returns for mutual funds."""
+    """Calculates calendar year returns for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data, years_to_calculate):
+    def calculate(scheme_data: Optional[Dict[str, Any]], years_to_calculate: List[int]) -> Optional[Dict[str, Any]]:
         """
-        Calculate calendar year returns for the last 5 years using stored scheme data.
+        Calculate calendar year returns for the specified years using stored scheme data.
         
         Args:
             scheme_data: Dictionary containing scheme data
@@ -15,30 +18,40 @@ class CalendarYearReturnsCalculator:
         Returns:
             Dictionary with scheme_name and calendar_returns data, or None if error occurs.
         """
-        if scheme_data is None:
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
             return None
         
-        # Create a date-to-NAV lookup dictionary for faster access
-        nav_lookup = {entry['date']: float(entry['nav']) for entry in scheme_data['data']}
         calendar_returns = {}
         
         for year in years_to_calculate:
             try:
-                # Find initial NAV: earliest available date in January
-                initial_nav = 0.0
-                for day in Constants.JANUARY_DATE_DAYS:
-                    date_pattern = f"{day:02d}-{Constants.JANUARY_MONTH:02d}-{year}"
-                    if date_pattern in nav_lookup:
-                        initial_nav = nav_lookup[date_pattern]
-                        break
+                # Define the start window (Jan 1-4) for the current year
+                start_window_begin = pd.Timestamp(f"{year}-01-01")
+                start_window_end = pd.Timestamp(f"{year}-01-04")
                 
-                # Find final NAV: early January of next year
-                final_nav = 0.0
-                for day in Constants.JANUARY_DATE_DAYS:
-                    date_pattern = f"{day:02d}-{Constants.JANUARY_MONTH:02d}-{year + 1}"
-                    if date_pattern in nav_lookup:
-                        final_nav = nav_lookup[date_pattern]
-                        break
+                # Define the end window (Jan 1-4) for the next year
+                end_window_begin = pd.Timestamp(f"{year + 1}-01-01")
+                end_window_end = pd.Timestamp(f"{year + 1}-01-04")
+                
+                # Find initial NAV: first available NAV in the start window
+                # We slice the dataframe for the window
+                start_data = df.loc[start_window_begin:start_window_end]
+                
+                if start_data.empty:
+                    calendar_returns[year] = None
+                    continue
+                    
+                initial_nav = start_data.iloc[0]['nav']
+                
+                # Find final NAV: first available NAV in the end window
+                end_data = df.loc[end_window_begin:end_window_end]
+                
+                if end_data.empty:
+                    calendar_returns[year] = None
+                    continue
+                    
+                final_nav = end_data.iloc[0]['nav']
 
                 if initial_nav == 0 or final_nav == 0:
                     calendar_returns[year] = None
@@ -47,7 +60,7 @@ class CalendarYearReturnsCalculator:
                 return_percent = (final_nav - initial_nav) * 100 / initial_nav
                 calendar_returns[year] = round(return_percent, Constants.DECIMAL_PLACES)
 
-            except (ValueError, KeyError, IndexError, ZeroDivisionError):
+            except Exception:
                 calendar_returns[year] = None
         
         return {
