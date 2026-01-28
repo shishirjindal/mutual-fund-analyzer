@@ -22,6 +22,7 @@ from static_standard_deviation_calculator import StaticStandardDeviationCalculat
 from rolling_standard_deviation_calculator import RollingStandardDeviationCalculator
 from static_sharpe_ratio_calculator import StaticSharpeRatioCalculator
 from rolling_sharpe_ratio_calculator import RollingSharpeRatioCalculator
+from static_drawdown_calculator import StaticDrawdownCalculator
 
 
 class MutualFundAnalyzer:
@@ -49,7 +50,8 @@ class MutualFundAnalyzer:
                          static_std_dev_data: Optional[Dict[str, Any]], 
                          rolling_std_dev_data: Optional[Dict[str, Any]], 
                          static_sharpe_data: Optional[Dict[str, Any]], 
-                         rolling_sharpe_data: Optional[Dict[str, Any]]) -> None:
+                         rolling_sharpe_data: Optional[Dict[str, Any]],
+                         static_drawdown_data: Optional[Dict[str, Any]]) -> None:
         """
         Display the calculated metrics (returns and risk) for a scheme in a formatted way.
         
@@ -171,6 +173,21 @@ class MutualFundAnalyzer:
                 else:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
         
+        # Print Max Drawdown
+        if static_drawdown_data:
+            print("\nMax Drawdown & Recovery Time:")
+            print("-" * 60)
+            print(f"{'Period':<15} {'Max Drawdown':<20} {'Recovery Time (Days)':<20}")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_DRAWDOWN_YEARS:
+                if year in static_drawdown_data['drawdowns']:
+                    dd_value = static_drawdown_data['drawdowns'][year]
+                    if isinstance(dd_value, dict) and 'error' in dd_value:
+                        print(f"{year} Year(s): {dd_value['error']}")
+                    else:
+                        print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
+        
         print("=" * 60)
     
     def process_scheme(self) -> None:
@@ -192,7 +209,8 @@ class MutualFundAnalyzer:
         rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
         static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
         rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
-        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data)
+        static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_drawdown_data)
 
 def main() -> None:
     """

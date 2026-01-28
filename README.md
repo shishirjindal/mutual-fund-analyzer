@@ -12,6 +12,7 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Rolling Standard Deviation**: Calculates rolling Standard Deviation metrics (Median, Mean, Min, Max, Latest) for configured windows
 - **Static Sharpe Ratio**: Calculates annualized Sharpe Ratio for 1, 3, and 5 years using daily returns
 - **Rolling Sharpe Ratio**: Calculates rolling Sharpe Ratio metrics (Median, Mean, 10th Percentile, % Positive, Latest) for configured windows
+- **Max Drawdown**: Calculates maximum loss from a peak to a trough and the recovery time (duration) for 1, 3, and 5 years
 
 ## Project Structure
 
@@ -25,6 +26,7 @@ The project is modularized into the following components:
 - **`rolling_standard_deviation_calculator.py`**: Calculates rolling Standard Deviation (Volatility).
 - **`static_sharpe_ratio_calculator.py`**: Calculates static annualized Sharpe Ratios.
 - **`rolling_sharpe_ratio_calculator.py`**: Calculates rolling Sharpe Ratios.
+- **`static_drawdown_calculator.py`**: Calculates maximum drawdown and recovery duration.
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
 - **`constants.py`**: Defines configuration constants (e.g., trading days, risk-free rate, date formats).
 
@@ -153,6 +155,14 @@ Window     Data       Median     Mean       10%ile     Latest     % > 0
 --------------------------------------------------------------------------------
 1          5          0.06       0.31       -0.71      0.1        53.41   
 3          10         0.49       0.5        0.21       0.42       99.71   
+
+Max Drawdown & Recovery Time:
+------------------------------------------------------------
+Period          Max Drawdown         Recovery Time (Days)
+------------------------------------------------------------
+1 Year(s)       -7.08%               82                  
+3 Year(s)       -15.82%              488                 
+5 Year(s)       -22.22%              782                 
 ============================================================
 ```
 
@@ -164,3 +174,4 @@ Window     Data       Median     Mean       10%ile     Latest     % > 0
 4. **Rolling Standard Deviation**: Distribution of annualized volatility over moving windows.
 5. **Static Sharpe Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Volatility).
 6. **Rolling Sharpe Ratio**: Distribution of Sharpe Ratio over moving windows.
+7. **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. Also includes Recovery Time (days to reach a new high).

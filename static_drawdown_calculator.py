@@ -1,0 +1,96 @@
+import pandas as pd
+import numpy as np
+from typing import Dict, Any, Optional
+from constants import Constants
+from utils import Utils
+
+class StaticDrawdownCalculator:
+    """Calculates Maximum Drawdown and Drawdown Duration for mutual funds using Pandas."""
+    
+    @staticmethod
+    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Calculate Maximum Drawdown and Drawdown Duration for 1, 3, and 5 years.
+        
+        Args:
+            scheme_data: Dictionary containing scheme data
+            
+        Returns:
+            Dictionary with scheme_name and drawdowns data, or None if error occurs.
+        """
+        df = Utils.convert_to_dataframe(scheme_data)
+        if df is None or df.empty:
+            return None
+        
+        drawdowns = {}
+        end_date = df.index[-1]
+        
+        for year in Constants.STATIC_DRAWDOWN_YEARS:
+            start_date = end_date - pd.Timedelta(days=365 * year)
+            relevant_df = df[df.index >= start_date].copy()
+            
+            if relevant_df.empty or len(relevant_df) < 2:
+                drawdowns[year] = {'error': 'Insufficient data for Drawdown calculation'}
+                continue
+            
+            try:
+                drawdowns[year] = StaticDrawdownCalculator._calculate_metrics(relevant_df)
+            except Exception as e:
+                drawdowns[year] = {'error': f'Error calculating Drawdown: {str(e)}'}
+        
+        return {
+            'scheme_name': scheme_data['scheme_name'],
+            'drawdowns': drawdowns
+        }
+
+    @staticmethod
+    def _calculate_metrics(df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Helper to calculate max drawdown and duration for a given DataFrame.
+        
+        Args:
+            df: Filtered DataFrame with 'nav' column and datetime index.
+            
+        Returns:
+            Dictionary with max_drawdown and max_duration_days.
+        """
+        # Calculate Cumulative Maximum
+        cummax = df['nav'].cummax()
+        
+        # Calculate Drawdown (percentage)
+        drawdown_series = (df['nav'] - cummax) / cummax
+        max_drawdown = drawdown_series.min() * 100
+        
+        # Robustly identify peaks using a small epsilon to handle floating point issues
+        # A peak is where NAV is effectively equal to the running cumulative maximum
+        is_peak = np.isclose(df['nav'], cummax, rtol=1e-09, atol=1e-09)
+        peak_dates = df.index[is_peak]
+        
+        max_duration_days = 0
+        
+        if not peak_dates.empty:
+            # Gaps between consecutive peaks represent the Time to Recover (in calendar days)
+            # This logic works because 'cummax' stays flat during a drawdown and only increases/matches
+            # when the price recovers to the previous high or sets a new one.
+            # So the difference between two 'peak' timestamps includes the time spent in the valley.
+            
+            # Ensure index is DatetimeIndex for .dt accessor
+            peak_dates_series = peak_dates.to_series()
+            if not pd.api.types.is_datetime64_any_dtype(peak_dates_series):
+                 peak_dates_series = pd.to_datetime(peak_dates_series)
+                 
+            recovery_times = peak_dates_series.diff().dt.days.fillna(0)
+            
+            # Current ongoing drawdown duration (from last peak to now)
+            # Only relevant if the last date in data is NOT a peak (i.e. we are currently in drawdown)
+            current_drawdown = 0
+            if not is_peak[-1]:
+                current_drawdown = (df.index[-1] - peak_dates[-1]).days
+            
+            # Max of all recovery times and current drawdown
+            max_duration_days = max(recovery_times.max(), current_drawdown)
+            
+        return {
+            'max_drawdown': round(max_drawdown, Constants.DECIMAL_PLACES),
+            'max_duration_days': int(max_duration_days)
+        }
