@@ -8,7 +8,9 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 
 - **Rolling Returns**: Calculates CAGR (Compound Annual Growth Rate) for 1, 3, and 5 years with min/average/max statistics
 - **Calendar Year Returns**: Calculates returns for the last 5 calendar years
-- **Sharpe Ratio**: Calculates annualized Sharpe Ratio for 1, 3, and 5 years using daily returns
+- **Static Standard Deviation**: Calculates annualized Standard Deviation (Volatility) for 1, 3, and 5 years
+- **Rolling Standard Deviation**: Calculates rolling Standard Deviation metrics (Median, Mean, Min, Max, Latest) for configured windows
+- **Static Sharpe Ratio**: Calculates annualized Sharpe Ratio for 1, 3, and 5 years using daily returns
 - **Rolling Sharpe Ratio**: Calculates rolling Sharpe Ratio metrics (Median, Mean, 10th Percentile, % Positive, Latest) for configured windows
 
 ## Project Structure
@@ -19,6 +21,8 @@ The project is modularized into the following components:
 - **`data_fetcher.py`**: Handles fetching historical NAV data using `mftool`.
 - **`rolling_returns_calculator.py`**: Calculates rolling CAGR returns.
 - **`calendar_year_returns_calculator.py`**: Calculates calendar year returns.
+- **`static_standard_deviation_calculator.py`**: Calculates static annualized Standard Deviation (Volatility).
+- **`rolling_standard_deviation_calculator.py`**: Calculates rolling Standard Deviation (Volatility).
 - **`static_sharpe_ratio_calculator.py`**: Calculates static annualized Sharpe Ratios.
 - **`rolling_sharpe_ratio_calculator.py`**: Calculates rolling Sharpe Ratios.
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
