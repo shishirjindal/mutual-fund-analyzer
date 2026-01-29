@@ -9,6 +9,7 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Rolling Returns**: Calculates CAGR (Compound Annual Growth Rate) for 1, 3, and 5 years with min/average/max statistics
 - **Calendar Year Returns**: Calculates returns for the last 5 calendar years
 - **Static Standard Deviation**: Calculates annualized Standard Deviation (Volatility) for 1, 3, and 5 years
+- **Static Downside Deviation**: Calculates annualized Downside Deviation (Downside Volatility) for 1, 3, and 5 years
 - **Rolling Standard Deviation**: Calculates rolling Standard Deviation metrics (Median, Mean, Min, Max, Latest) for configured windows
 - **Static Sharpe Ratio**: Calculates annualized Sharpe Ratio for 1, 3, and 5 years using daily returns
 - **Rolling Sharpe Ratio**: Calculates rolling Sharpe Ratio metrics (Median, Mean, 10th Percentile, % Positive, Latest) for configured windows
@@ -25,6 +26,7 @@ The project is modularized into the following components:
 - **`rolling_returns_calculator.py`**: Calculates rolling CAGR returns.
 - **`calendar_year_returns_calculator.py`**: Calculates calendar year returns.
 - **`static_standard_deviation_calculator.py`**: Calculates static annualized Standard Deviation (Volatility).
+- **`static_downside_deviation_calculator.py`**: Calculates static annualized Downside Deviation.
 - **`rolling_standard_deviation_calculator.py`**: Calculates rolling Standard Deviation (Volatility).
 - **`static_sharpe_ratio_calculator.py`**: Calculates static annualized Sharpe Ratios.
 - **`rolling_sharpe_ratio_calculator.py`**: Calculates rolling Sharpe Ratios.
@@ -140,6 +142,12 @@ Static Standard Deviation (Annualized Volatility %):
 3 Year(s): 11.18%
 5 Year(s): 13.17%
 
+Static Downside Deviation (Annualized Downside Volatility %):
+------------------------------------------------------------
+1 Year(s): 7.22%
+3 Year(s): 7.73%
+5 Year(s): 9.29%
+
 Rolling Standard Deviation (Volatility %):
 ------------------------------------------------------------
 Window     Data       Median     Mean       Min        Max        Latest    
@@ -188,9 +196,10 @@ Period          Max Drawdown         Recovery Time (Days)
 1. **Rolling Returns**: Compound Annual Growth Rate (CAGR) over moving windows (1, 3, 5 years).
 2. **Calendar Year Returns**: Absolute returns for specific calendar years (Jan 1st to Jan 1st).
 3. **Static Standard Deviation**: Annualized volatility calculated from daily returns over fixed periods.
-4. **Rolling Standard Deviation**: Distribution of annualized volatility over moving windows.
-5. **Static Sharpe Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Volatility).
-6. **Rolling Sharpe Ratio**: Distribution of Sharpe Ratio over moving windows.
-7. **Static Sortino Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Downside Deviation). Penalizes only negative volatility.
-8. **Rolling Sortino Ratio**: Distribution of Sortino Ratio over moving windows.
-9. **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. Also includes Recovery Time (days to reach a new high).
+4. **Static Downside Deviation**: Annualized downside volatility (considering only negative returns) calculated from daily returns over fixed periods.
+5. **Rolling Standard Deviation**: Distribution of annualized volatility over moving windows.
+6. **Static Sharpe Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Volatility).
+7. **Rolling Sharpe Ratio**: Distribution of Sharpe Ratio over moving windows.
+8. **Static Sortino Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Downside Deviation). Penalizes only negative volatility.
+9. **Rolling Sortino Ratio**: Distribution of Sortino Ratio over moving windows.
+10. **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. Also includes Recovery Time (days to reach a new high).

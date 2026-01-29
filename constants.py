@@ -27,6 +27,9 @@ class Constants:
     # Static Standard Deviation configuration
     STATIC_STANDARD_DEVIATION_YEARS = [1, 3, 5]
 
+    # Static Downside Deviation configuration
+    STATIC_DOWNSIDE_DEVIATION_YEARS = [1, 3, 5]
+
     # Rolling Standard Deviation configuration
     ROLLING_STANDARD_DEVIATION_MAP = [
         {

@@ -19,6 +19,7 @@ from data_fetcher import SchemeDataFetcher
 from rolling_returns_calculator import RollingReturnsCalculator
 from calendar_year_returns_calculator import CalendarYearReturnsCalculator
 from static_standard_deviation_calculator import StaticStandardDeviationCalculator
+from static_downside_deviation_calculator import StaticDownsideDeviationCalculator
 from rolling_standard_deviation_calculator import RollingStandardDeviationCalculator
 from static_sharpe_ratio_calculator import StaticSharpeRatioCalculator
 from rolling_sharpe_ratio_calculator import RollingSharpeRatioCalculator
@@ -50,6 +51,7 @@ class MutualFundAnalyzer:
                          rolling_data: Optional[Dict[str, Any]], 
                          calendar_data: Optional[Dict[str, Any]], 
                          static_std_dev_data: Optional[Dict[str, Any]], 
+                         static_downside_dev_data: Optional[Dict[str, Any]],
                          rolling_std_dev_data: Optional[Dict[str, Any]], 
                          static_sharpe_data: Optional[Dict[str, Any]], 
                          rolling_sharpe_data: Optional[Dict[str, Any]],
@@ -60,13 +62,14 @@ class MutualFundAnalyzer:
         Display the calculated metrics (returns and risk) for a scheme in a formatted way.
         
         Prints rolling returns (min/avg/max CAGR), calendar year returns, Standard Deviation,
-        Rolling Standard Deviation, Sharpe Ratio, Rolling Sharpe Ratio, Sortino Ratio, 
+        Downside Deviation, Rolling Standard Deviation, Sharpe Ratio, Rolling Sharpe Ratio, Sortino Ratio, 
         and Rolling Sortino Ratio in a formatted table format.
         
         Args:
             rolling_data: Dictionary containing rolling returns data, or None
             calendar_data: Dictionary containing calendar year returns data, or None
             static_std_dev_data: Dictionary containing static standard deviation data, or None
+            static_downside_dev_data: Dictionary containing static downside deviation data, or None
             rolling_std_dev_data: Dictionary containing rolling standard deviation data, or None
             static_sharpe_data: Dictionary containing static Sharpe ratio data, or None
             rolling_sharpe_data: Dictionary containing rolling Sharpe ratio data, or None
@@ -75,8 +78,8 @@ class MutualFundAnalyzer:
             static_drawdown_data: Dictionary containing static drawdown data, or None
         """
         if (rolling_data is None and calendar_data is None and static_std_dev_data is None and 
-            rolling_std_dev_data is None and static_sharpe_data is None and rolling_sharpe_data is None and
-            static_sortino_data is None and rolling_sortino_data is None):
+            static_downside_dev_data is None and rolling_std_dev_data is None and static_sharpe_data is None and 
+            rolling_sharpe_data is None and static_sortino_data is None and rolling_sortino_data is None):
             return
         
         scheme_name = 'Unknown'
@@ -86,6 +89,8 @@ class MutualFundAnalyzer:
             scheme_name = calendar_data['scheme_name']
         elif static_std_dev_data and 'scheme_name' in static_std_dev_data:
             scheme_name = static_std_dev_data['scheme_name']
+        elif static_downside_dev_data and 'scheme_name' in static_downside_dev_data:
+            scheme_name = static_downside_dev_data['scheme_name']
         elif rolling_std_dev_data and 'scheme_name' in rolling_std_dev_data:
             scheme_name = rolling_std_dev_data['scheme_name']
         elif static_sharpe_data and 'scheme_name' in static_sharpe_data:
@@ -138,6 +143,19 @@ class MutualFundAnalyzer:
                         print(f"{year} Year(s): {std_dev_value['error']}")
                     else:
                         print(f"{year} Year(s): {std_dev_value}%")
+
+        # Print Downside Deviation
+        if static_downside_dev_data:
+            print("\nStatic Downside Deviation (Annualized Downside Volatility %):")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS:
+                if year in static_downside_dev_data['downside_devs']:
+                    dev_value = static_downside_dev_data['downside_devs'][year]
+                    if isinstance(dev_value, dict) and 'error' in dev_value:
+                        print(f"{year} Year(s): {dev_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {dev_value}%")
 
         # Print Rolling Standard Deviation
         if rolling_std_dev_data:
@@ -249,13 +267,14 @@ class MutualFundAnalyzer:
         rolling_data = RollingReturnsCalculator.calculate(self.scheme_data)
         calendar_data = CalendarYearReturnsCalculator.calculate(self.scheme_data, self.years_to_calculate)
         static_std_dev_data = StaticStandardDeviationCalculator.calculate(self.scheme_data)
+        static_downside_dev_data = StaticDownsideDeviationCalculator.calculate(self.scheme_data)
         rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
         static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
         rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
         static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
         rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
-        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_sortino_data, rolling_sortino_data, static_drawdown_data)
+        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, static_downside_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_sortino_data, rolling_sortino_data, static_drawdown_data)
 
 def main() -> None:
     """
