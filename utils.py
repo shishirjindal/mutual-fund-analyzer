@@ -1,6 +1,7 @@
-
 from typing import List, Dict, Any, Optional
 import pandas as pd
+import math
+import numpy as np
 from constants import Constants
 
 class Utils:
@@ -96,11 +97,40 @@ class Utils:
             
             # Drop rows with NaN NAV
             df.dropna(subset=['nav'], inplace=True)
-
+            
             # Drop rows with 0 NAV (to prevent division by zero in calculations)
             df = df[df['nav'] != 0]
             
             return df
-            
         except Exception:
             return None
+
+    @staticmethod
+    def calculate_downside_deviation(returns: pd.Series, target: float = 0.0) -> float:
+        """
+        Calculate downside deviation (risk) for Sortino Ratio.
+        
+        Calculated as the Root Mean Square of the underperformance (returns below target).
+        Formula: sqrt(mean(min(0, return - target)^2))
+        
+        Args:
+            returns: Series of daily returns
+            target: Target return (default 0.0)
+            
+        Returns:
+            Downside deviation (float)
+        """
+        # Calculate downside difference
+        downside_diff = returns - target
+        
+        # Keep only negative values (underperformance), replace positive with 0
+        downside_diff = downside_diff.clip(upper=0)
+        
+        # Square the differences
+        downside_sq = downside_diff ** 2
+        
+        # Mean of squares (using full population N)
+        mean_sq = downside_sq.mean()
+        
+        # Square root
+        return math.sqrt(mean_sq)

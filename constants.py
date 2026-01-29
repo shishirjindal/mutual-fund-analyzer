@@ -42,11 +42,26 @@ class Constants:
     # Static Sharpe ratio configuration
     STATIC_SHARPE_RATIO_YEARS = [1, 3, 5]
 
+    # Static Sortino ratio configuration
+    STATIC_SORTINO_RATIO_YEARS = [1, 3, 5]
+
     # Static Drawdown configuration
     STATIC_DRAWDOWN_YEARS = [1, 3, 5]
 
     # Rolling Sharpe ratio configuration
     ROLLING_SHARPE_RATIO_MAP = [
+        {
+            'rolling_window': 1,
+            'total_data': 5,
+        },
+        {
+            'rolling_window': 3,
+            'total_data': 10,
+        },
+    ]
+
+    # Rolling Sortino ratio configuration
+    ROLLING_SORTINO_RATIO_MAP = [
         {
             'rolling_window': 1,
             'total_data': 5,

@@ -22,6 +22,8 @@ from static_standard_deviation_calculator import StaticStandardDeviationCalculat
 from rolling_standard_deviation_calculator import RollingStandardDeviationCalculator
 from static_sharpe_ratio_calculator import StaticSharpeRatioCalculator
 from rolling_sharpe_ratio_calculator import RollingSharpeRatioCalculator
+from static_sortino_ratio_calculator import StaticSortinoRatioCalculator
+from rolling_sortino_ratio_calculator import RollingSortinoRatioCalculator
 from static_drawdown_calculator import StaticDrawdownCalculator
 
 
@@ -51,12 +53,15 @@ class MutualFundAnalyzer:
                          rolling_std_dev_data: Optional[Dict[str, Any]], 
                          static_sharpe_data: Optional[Dict[str, Any]], 
                          rolling_sharpe_data: Optional[Dict[str, Any]],
+                         static_sortino_data: Optional[Dict[str, Any]], 
+                         rolling_sortino_data: Optional[Dict[str, Any]],
                          static_drawdown_data: Optional[Dict[str, Any]]) -> None:
         """
         Display the calculated metrics (returns and risk) for a scheme in a formatted way.
         
         Prints rolling returns (min/avg/max CAGR), calendar year returns, Standard Deviation,
-        Rolling Standard Deviation, Sharpe Ratio, and Rolling Sharpe Ratio in a formatted table format.
+        Rolling Standard Deviation, Sharpe Ratio, Rolling Sharpe Ratio, Sortino Ratio, 
+        and Rolling Sortino Ratio in a formatted table format.
         
         Args:
             rolling_data: Dictionary containing rolling returns data, or None
@@ -65,9 +70,13 @@ class MutualFundAnalyzer:
             rolling_std_dev_data: Dictionary containing rolling standard deviation data, or None
             static_sharpe_data: Dictionary containing static Sharpe ratio data, or None
             rolling_sharpe_data: Dictionary containing rolling Sharpe ratio data, or None
+            static_sortino_data: Dictionary containing static Sortino ratio data, or None
+            rolling_sortino_data: Dictionary containing rolling Sortino ratio data, or None
+            static_drawdown_data: Dictionary containing static drawdown data, or None
         """
         if (rolling_data is None and calendar_data is None and static_std_dev_data is None and 
-            rolling_std_dev_data is None and static_sharpe_data is None and rolling_sharpe_data is None):
+            rolling_std_dev_data is None and static_sharpe_data is None and rolling_sharpe_data is None and
+            static_sortino_data is None and rolling_sortino_data is None):
             return
         
         scheme_name = 'Unknown'
@@ -83,6 +92,10 @@ class MutualFundAnalyzer:
             scheme_name = static_sharpe_data['scheme_name']
         elif rolling_sharpe_data and 'scheme_name' in rolling_sharpe_data:
             scheme_name = rolling_sharpe_data['scheme_name']
+        elif static_sortino_data and 'scheme_name' in static_sortino_data:
+            scheme_name = static_sortino_data['scheme_name']
+        elif rolling_sortino_data and 'scheme_name' in rolling_sortino_data:
+            scheme_name = rolling_sortino_data['scheme_name']
         
         print(f"\n{scheme_name}")
         print("=" * 60)
@@ -172,6 +185,36 @@ class MutualFundAnalyzer:
                     print(f"{window:<10} {total_data:<10} Error: {item['error']}")
                 else:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
+
+        # Print Sortino Ratio
+        if static_sortino_data:
+            print("\nSortino Ratio:")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_SORTINO_RATIO_YEARS:
+                if year in static_sortino_data['static_sortino_ratios']:
+                    sortino_value = static_sortino_data['static_sortino_ratios'][year]
+                    if isinstance(sortino_value, dict) and 'error' in sortino_value:
+                        print(f"{year} Year(s): {sortino_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {sortino_value}")
+
+        # Print Rolling Sortino Ratio
+        if rolling_sortino_data:
+            print("\nRolling Sortino Ratio:")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
+            print("-" * 80)
+            
+            for item in rolling_sortino_data['rolling_sortino_ratios']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
         
         # Print Max Drawdown
         if static_drawdown_data:
@@ -209,8 +252,10 @@ class MutualFundAnalyzer:
         rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
         static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
         rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
+        static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
+        rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
-        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_drawdown_data)
+        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_sortino_data, rolling_sortino_data, static_drawdown_data)
 
 def main() -> None:
     """
