@@ -2,9 +2,9 @@ import json
 from mftool import Mftool
 from typing import Dict, Any, Optional
 
-class SchemeDataFetcher:
+class DataFetcher:
     """
-    Fetcher class to retrieve mutual fund scheme data.
+    Fetcher class to retrieve mutual fund scheme and benchmark data.
     
     Provides methods to fetch historical NAV data using Mftool.
     """
@@ -50,3 +50,19 @@ class SchemeDataFetcher:
         except Exception as e:
             print(f"Unexpected error processing scheme code {scheme_code}: {e}")
             return None
+
+    @staticmethod
+    def fetch_benchmark_data(index_code: str = "NIFTY 50") -> Optional[Dict[str, Any]]:
+        """
+        Fetch historical data for a benchmark index.
+        
+        Args:
+            index_code: Benchmark index code (default "NIFTY 50")
+            
+        Returns:
+            Dictionary containing benchmark data with 'data' key (list of entries with 'date' and 'nav').
+            Currently returns None as benchmark fetching is not implemented.
+        """
+        # TODO: Implement benchmark data fetching
+        print(f"Warning: Benchmark data fetching for {index_code} is not yet implemented.")
+        return None

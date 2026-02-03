@@ -51,6 +51,15 @@ class Constants:
     # Static Drawdown configuration
     STATIC_DRAWDOWN_YEARS = [1, 3, 5]
 
+    # Static Alpha configuration
+    STATIC_ALPHA_YEARS = [1, 3, 5]
+
+    # Static Beta configuration
+    STATIC_BETA_YEARS = [1, 3, 5]
+
+    # Information Ratio configuration
+    INFORMATION_RATIO_YEARS = [1, 3, 5]
+
     # Rolling Sharpe ratio configuration
     ROLLING_SHARPE_RATIO_MAP = [
         {

@@ -15,7 +15,7 @@ import sys
 import datetime
 from typing import List, Dict, Any, Optional
 from constants import Constants
-from data_fetcher import SchemeDataFetcher
+from data_fetcher import DataFetcher
 from rolling_returns_calculator import RollingReturnsCalculator
 from calendar_year_returns_calculator import CalendarYearReturnsCalculator
 from static_standard_deviation_calculator import StaticStandardDeviationCalculator
@@ -26,6 +26,9 @@ from rolling_sharpe_ratio_calculator import RollingSharpeRatioCalculator
 from static_sortino_ratio_calculator import StaticSortinoRatioCalculator
 from rolling_sortino_ratio_calculator import RollingSortinoRatioCalculator
 from static_drawdown_calculator import StaticDrawdownCalculator
+from static_alpha_calculator import StaticAlphaCalculator
+from static_beta_calculator import StaticBetaCalculator
+from information_ratio_calculator import InformationRatioCalculator
 
 
 class MutualFundAnalyzer:
@@ -45,7 +48,8 @@ class MutualFundAnalyzer:
         """
         self.years_to_calculate = [datetime.date.today().year - i for i in range(1, Constants.NUM_CALENDAR_YEARS + 1)]
         self.scheme_code = scheme_code
-        self.scheme_data = SchemeDataFetcher.fetch_scheme_data(self.scheme_code)
+        self.scheme_data = DataFetcher.fetch_scheme_data(self.scheme_code)
+        self.benchmark_data = DataFetcher.fetch_benchmark_data()
         
         # Initialize results variables
         self.rolling_data: Optional[Dict[str, Any]] = None
@@ -58,6 +62,9 @@ class MutualFundAnalyzer:
         self.static_sortino_data: Optional[Dict[str, Any]] = None
         self.rolling_sortino_data: Optional[Dict[str, Any]] = None
         self.static_drawdown_data: Optional[Dict[str, Any]] = None
+        self.static_alpha_data: Optional[Dict[str, Any]] = None
+        self.static_beta_data: Optional[Dict[str, Any]] = None
+        self.information_ratio_data: Optional[Dict[str, Any]] = None
     
     def _display_metrics(self) -> None:
         """
@@ -71,7 +78,9 @@ class MutualFundAnalyzer:
         """
         if (self.rolling_data is None and self.calendar_data is None and self.static_std_dev_data is None and 
             self.static_downside_dev_data is None and self.rolling_std_dev_data is None and self.static_sharpe_data is None and 
-            self.rolling_sharpe_data is None and self.static_sortino_data is None and self.rolling_sortino_data is None):
+            self.rolling_sharpe_data is None and self.static_sortino_data is None and self.rolling_sortino_data is None and
+            self.static_drawdown_data is None and self.static_alpha_data is None and self.static_beta_data is None and
+            self.information_ratio_data is None):
             return
         
         scheme_name = 'Unknown'
@@ -240,6 +249,45 @@ class MutualFundAnalyzer:
                         print(f"{year} Year(s): {dd_value['error']}")
                     else:
                         print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
+
+        # Print Static Alpha
+        if self.static_alpha_data:
+            print("\nStatic Alpha (Jensen's Alpha %):")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_ALPHA_YEARS:
+                if year in self.static_alpha_data['static_alphas']:
+                    alpha_value = self.static_alpha_data['static_alphas'][year]
+                    if isinstance(alpha_value, dict) and 'error' in alpha_value:
+                        print(f"{year} Year(s): {alpha_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {alpha_value}%")
+
+        # Print Static Beta
+        if self.static_beta_data:
+            print("\nStatic Beta:")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_BETA_YEARS:
+                if year in self.static_beta_data['static_betas']:
+                    beta_value = self.static_beta_data['static_betas'][year]
+                    if isinstance(beta_value, dict) and 'error' in beta_value:
+                        print(f"{year} Year(s): {beta_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {beta_value}")
+
+        # Print Information Ratio
+        if self.information_ratio_data:
+            print("\nInformation Ratio:")
+            print("-" * 60)
+            
+            for year in Constants.INFORMATION_RATIO_YEARS:
+                if year in self.information_ratio_data['information_ratios']:
+                    ir_value = self.information_ratio_data['information_ratios'][year]
+                    if isinstance(ir_value, dict) and 'error' in ir_value:
+                        print(f"{year} Year(s): {ir_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {ir_value}")
         
         print("=" * 60)
     
@@ -266,6 +314,10 @@ class MutualFundAnalyzer:
         self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
         self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+        if self.benchmark_data:
+            self.static_alpha_data = StaticAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.information_ratio_data = InformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
         self._display_metrics()
 
 def main() -> None:

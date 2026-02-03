@@ -16,6 +16,9 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Static Sortino Ratio**: Calculates annualized Sortino Ratio for 1, 3, and 5 years using daily returns and downside deviation
 - **Rolling Sortino Ratio**: Calculates rolling Sortino Ratio metrics (Median, Mean, 10th Percentile, % Positive, Latest) for configured windows
 - **Max Drawdown**: Calculates maximum loss from a peak to a trough and the recovery time (duration) for 1, 3, and 5 years
+- **Static Alpha**: Calculates Jensen's Alpha (Excess Return over CAPM Expected Return) for 1, 3, and 5 years
+- **Static Beta**: Calculates Beta (Volatility relative to benchmark) for 1, 3, and 5 years
+- **Information Ratio**: Calculates Information Ratio (Active Return / Tracking Error) for 1, 3, and 5 years
 
 ## Project Structure
 
@@ -33,6 +36,9 @@ The project is modularized into the following components:
 - **`static_sortino_ratio_calculator.py`**: Calculates static annualized Sortino Ratios.
 - **`rolling_sortino_ratio_calculator.py`**: Calculates rolling Sortino Ratios.
 - **`static_drawdown_calculator.py`**: Calculates maximum drawdown and recovery duration.
+- **`static_alpha_calculator.py`**: Calculates Jensen's Alpha.
+- **`static_beta_calculator.py`**: Calculates Beta.
+- **`information_ratio_calculator.py`**: Calculates Information Ratio.
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
 - **`constants.py`**: Defines configuration constants (e.g., trading days, risk-free rate, date formats).
 
@@ -203,3 +209,6 @@ Period          Max Drawdown         Recovery Time (Days)
 8. **Static Sortino Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Downside Deviation). Penalizes only negative volatility.
 9. **Rolling Sortino Ratio**: Distribution of Sortino Ratio over moving windows.
 10. **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. Also includes Recovery Time (days to reach a new high).
+11. **Static Alpha**: Jensen's Alpha measures the excess return of the fund over its expected return (predicted by CAPM). A positive alpha indicates the fund has outperformed its benchmark after adjusting for risk.
+12. **Static Beta**: A measure of the volatility (or systematic risk) of the fund in comparison to the market/benchmark. Beta = 1 indicates volatility matches the market.
+13. **Information Ratio**: A measure of the risk-adjusted return of the fund relative to a benchmark. Calculated as (Active Return / Tracking Error). Higher is better.
