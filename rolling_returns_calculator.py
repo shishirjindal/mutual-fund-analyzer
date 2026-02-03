@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from typing import Dict, Any, Optional
 from constants import Constants
 from utils import Utils
@@ -10,7 +9,7 @@ class RollingReturnsCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate rolling returns for 1, 3 and 5 years using stored scheme data.
+        Calculate rolling returns for periods defined in Constants.ROLLING_YEARS using stored scheme data.
         
         Args:
             scheme_data: Dictionary containing scheme data
@@ -42,8 +41,7 @@ class RollingReturnsCalculator:
             absolute_returns = df['nav'].pct_change(periods=days) * 100
             
             # Check for and handle infinite values (e.g., division by zero)
-            import numpy as np
-            absolute_returns.replace([np.inf, -np.inf], np.nan, inplace=True)
+            absolute_returns = absolute_returns.replace([float('inf'), -float('inf')], float('nan'))
             
             # Drop NaN values (first 'days' rows will be NaN because of shift)
             valid_returns = absolute_returns.dropna()
@@ -58,8 +56,8 @@ class RollingReturnsCalculator:
                 
             # Calculate CAGR for each rolling return
             # Formula: ((1 + abs_ret/100)^(1/years) - 1) * 100
-            # We can vectorize this using pandas
-            cagr_values = ((1 + valid_returns / 100) ** (1 / year) - 1) * 100
+            # Vectorized calculation using Pandas
+            cagr_values = ((1 + valid_returns / 100).pow(1 / year) - 1) * 100
             
             rolling_returns[year] = {
                 'min': round(cagr_values.min(), Constants.DECIMAL_PLACES),

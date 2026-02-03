@@ -10,7 +10,7 @@ class StaticDownsideDeviationCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate annualized Static Downside Deviation for 1, 3, and 5 years.
+        Calculate annualized Static Downside Deviation for periods defined in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS.
         
         Args:
             scheme_data: Dictionary containing scheme data
@@ -49,7 +49,7 @@ class StaticDownsideDeviationCalculator:
 
                 # Calculate downside deviation of daily returns
                 # Target return for downside is 0 (capture absolute downside risk)
-                downside_dev_daily = Utils.calculate_downside_deviation(daily_returns, 0.0)
+                downside_dev_daily = Utils.calculate_downside_deviation(daily_returns, Constants.RISK_FREE_RATE // Constants.TRADING_DAYS_PER_YEAR)
                 
                 # Annualize downside deviation
                 # Annualized Downside Dev = Daily Downside Dev * Sqrt(Trading Days)

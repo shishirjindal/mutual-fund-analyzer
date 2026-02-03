@@ -1,7 +1,6 @@
 from typing import List, Dict, Any, Optional
 import pandas as pd
 import math
-import numpy as np
 from constants import Constants
 
 class Utils:
@@ -108,14 +107,14 @@ class Utils:
     @staticmethod
     def calculate_downside_deviation(returns: pd.Series, target: float = 0.0) -> float:
         """
-        Calculate downside deviation (risk) for Sortino Ratio.
+        Calculate downside deviation (risk).
         
         Calculated as the Root Mean Square of the underperformance (returns below target).
         Formula: sqrt(mean(min(0, return - target)^2))
         
         Args:
             returns: Series of daily returns
-            target: Target return (default 0.0)
+            target: Risk free rate per day (default 0.0)
             
         Returns:
             Downside deviation (float)

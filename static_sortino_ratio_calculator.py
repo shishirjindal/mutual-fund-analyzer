@@ -10,7 +10,7 @@ class StaticSortinoRatioCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate annualized Static Sortino Ratio.
+        Calculate annualized Static Sortino Ratio for periods defined in Constants.STATIC_SORTINO_RATIO_YEARS.
         
         Args:
             scheme_data: Dictionary containing scheme data

@@ -10,7 +10,7 @@ class RollingSharpeRatioCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate rolling Sharpe Ratio.
+        Calculate rolling Sharpe Ratio for configurations defined in Constants.ROLLING_SHARPE_RATIO_MAP.
         
         Args:
             scheme_data: Dictionary containing scheme data

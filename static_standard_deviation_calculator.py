@@ -10,7 +10,7 @@ class StaticStandardDeviationCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate annualized Static Standard Deviation for 1, 3, and 5 years.
+        Calculate annualized Static Standard Deviation for periods defined in Constants.STATIC_STANDARD_DEVIATION_YEARS.
         
         Args:
             scheme_data: Dictionary containing scheme data

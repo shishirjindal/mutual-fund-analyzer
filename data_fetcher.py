@@ -18,8 +18,16 @@ class SchemeDataFetcher:
             scheme_code: Mutual fund scheme code
             
         Returns:
-            Dictionary containing scheme data with keys 'meta' (scheme details) and 
-            'data' (list of NAV entries), or None if error occurs.
+            Dictionary containing scheme data with the following keys:
+            - fund_house
+            - scheme_type
+            - scheme_category
+            - scheme_code
+            - scheme_name
+            - scheme_start_date
+            - data (list of NAV entries)
+
+            Returns None if error occurs.
         """
         mf_tool = Mftool()
         try:

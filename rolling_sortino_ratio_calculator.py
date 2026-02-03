@@ -11,7 +11,7 @@ class RollingSortinoRatioCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate rolling Sortino Ratio.
+        Calculate rolling Sortino Ratio for configurations defined in Constants.ROLLING_SORTINO_RATIO_MAP.
         
         Args:
             scheme_data: Dictionary containing scheme data

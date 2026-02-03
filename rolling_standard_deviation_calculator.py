@@ -11,7 +11,7 @@ class RollingStandardDeviationCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate rolling Standard Deviation.
+        Calculate rolling Standard Deviation for configurations defined in Constants.ROLLING_STANDARD_DEVIATION_MAP.
         
         Args:
             scheme_data: Dictionary containing scheme data with 'data' key holding list of NAVs

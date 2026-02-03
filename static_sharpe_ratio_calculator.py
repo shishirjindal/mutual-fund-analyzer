@@ -10,7 +10,7 @@ class StaticSharpeRatioCalculator:
     @staticmethod
     def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Calculate annualized Static Sharpe Ratio.
+        Calculate annualized Static Sharpe Ratio for periods defined in Constants.STATIC_SHARPE_RATIO_YEARS.
         
         Args:
             scheme_data: Dictionary containing scheme data

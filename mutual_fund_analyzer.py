@@ -46,18 +46,20 @@ class MutualFundAnalyzer:
         self.years_to_calculate = [datetime.date.today().year - i for i in range(1, Constants.NUM_CALENDAR_YEARS + 1)]
         self.scheme_code = scheme_code
         self.scheme_data = SchemeDataFetcher.fetch_scheme_data(self.scheme_code)
+        
+        # Initialize results variables
+        self.rolling_data: Optional[Dict[str, Any]] = None
+        self.calendar_data: Optional[Dict[str, Any]] = None
+        self.static_std_dev_data: Optional[Dict[str, Any]] = None
+        self.static_downside_dev_data: Optional[Dict[str, Any]] = None
+        self.rolling_std_dev_data: Optional[Dict[str, Any]] = None
+        self.static_sharpe_data: Optional[Dict[str, Any]] = None
+        self.rolling_sharpe_data: Optional[Dict[str, Any]] = None
+        self.static_sortino_data: Optional[Dict[str, Any]] = None
+        self.rolling_sortino_data: Optional[Dict[str, Any]] = None
+        self.static_drawdown_data: Optional[Dict[str, Any]] = None
     
-    def _display_metrics(self, 
-                         rolling_data: Optional[Dict[str, Any]], 
-                         calendar_data: Optional[Dict[str, Any]], 
-                         static_std_dev_data: Optional[Dict[str, Any]], 
-                         static_downside_dev_data: Optional[Dict[str, Any]],
-                         rolling_std_dev_data: Optional[Dict[str, Any]], 
-                         static_sharpe_data: Optional[Dict[str, Any]], 
-                         rolling_sharpe_data: Optional[Dict[str, Any]],
-                         static_sortino_data: Optional[Dict[str, Any]], 
-                         rolling_sortino_data: Optional[Dict[str, Any]],
-                         static_drawdown_data: Optional[Dict[str, Any]]) -> None:
+    def _display_metrics(self) -> None:
         """
         Display the calculated metrics (returns and risk) for a scheme in a formatted way.
         
@@ -65,100 +67,90 @@ class MutualFundAnalyzer:
         Downside Deviation, Rolling Standard Deviation, Sharpe Ratio, Rolling Sharpe Ratio, Sortino Ratio, 
         and Rolling Sortino Ratio in a formatted table format.
         
-        Args:
-            rolling_data: Dictionary containing rolling returns data, or None
-            calendar_data: Dictionary containing calendar year returns data, or None
-            static_std_dev_data: Dictionary containing static standard deviation data, or None
-            static_downside_dev_data: Dictionary containing static downside deviation data, or None
-            rolling_std_dev_data: Dictionary containing rolling standard deviation data, or None
-            static_sharpe_data: Dictionary containing static Sharpe ratio data, or None
-            rolling_sharpe_data: Dictionary containing rolling Sharpe ratio data, or None
-            static_sortino_data: Dictionary containing static Sortino ratio data, or None
-            rolling_sortino_data: Dictionary containing rolling Sortino ratio data, or None
-            static_drawdown_data: Dictionary containing static drawdown data, or None
+        Uses instance variables for data.
         """
-        if (rolling_data is None and calendar_data is None and static_std_dev_data is None and 
-            static_downside_dev_data is None and rolling_std_dev_data is None and static_sharpe_data is None and 
-            rolling_sharpe_data is None and static_sortino_data is None and rolling_sortino_data is None):
+        if (self.rolling_data is None and self.calendar_data is None and self.static_std_dev_data is None and 
+            self.static_downside_dev_data is None and self.rolling_std_dev_data is None and self.static_sharpe_data is None and 
+            self.rolling_sharpe_data is None and self.static_sortino_data is None and self.rolling_sortino_data is None):
             return
         
         scheme_name = 'Unknown'
-        if rolling_data and 'scheme_name' in rolling_data:
-            scheme_name = rolling_data['scheme_name']
-        elif calendar_data and 'scheme_name' in calendar_data:
-            scheme_name = calendar_data['scheme_name']
-        elif static_std_dev_data and 'scheme_name' in static_std_dev_data:
-            scheme_name = static_std_dev_data['scheme_name']
-        elif static_downside_dev_data and 'scheme_name' in static_downside_dev_data:
-            scheme_name = static_downside_dev_data['scheme_name']
-        elif rolling_std_dev_data and 'scheme_name' in rolling_std_dev_data:
-            scheme_name = rolling_std_dev_data['scheme_name']
-        elif static_sharpe_data and 'scheme_name' in static_sharpe_data:
-            scheme_name = static_sharpe_data['scheme_name']
-        elif rolling_sharpe_data and 'scheme_name' in rolling_sharpe_data:
-            scheme_name = rolling_sharpe_data['scheme_name']
-        elif static_sortino_data and 'scheme_name' in static_sortino_data:
-            scheme_name = static_sortino_data['scheme_name']
-        elif rolling_sortino_data and 'scheme_name' in rolling_sortino_data:
-            scheme_name = rolling_sortino_data['scheme_name']
+        if self.rolling_data and 'scheme_name' in self.rolling_data:
+            scheme_name = self.rolling_data['scheme_name']
+        elif self.calendar_data and 'scheme_name' in self.calendar_data:
+            scheme_name = self.calendar_data['scheme_name']
+        elif self.static_std_dev_data and 'scheme_name' in self.static_std_dev_data:
+            scheme_name = self.static_std_dev_data['scheme_name']
+        elif self.static_downside_dev_data and 'scheme_name' in self.static_downside_dev_data:
+            scheme_name = self.static_downside_dev_data['scheme_name']
+        elif self.rolling_std_dev_data and 'scheme_name' in self.rolling_std_dev_data:
+            scheme_name = self.rolling_std_dev_data['scheme_name']
+        elif self.static_sharpe_data and 'scheme_name' in self.static_sharpe_data:
+            scheme_name = self.static_sharpe_data['scheme_name']
+        elif self.rolling_sharpe_data and 'scheme_name' in self.rolling_sharpe_data:
+            scheme_name = self.rolling_sharpe_data['scheme_name']
+        elif self.static_sortino_data and 'scheme_name' in self.static_sortino_data:
+            scheme_name = self.static_sortino_data['scheme_name']
+        elif self.rolling_sortino_data and 'scheme_name' in self.rolling_sortino_data:
+            scheme_name = self.rolling_sortino_data['scheme_name']
         
         print(f"\n{scheme_name}")
         print("=" * 60)
         
         # Print rolling returns
-        if rolling_data:
+        if self.rolling_data:
             print("\nRolling Returns (Min / Average / Max CAGR):")
             print("-" * 60)
             
             for year in Constants.ROLLING_YEARS:
-                if year in rolling_data['rolling_returns']:
-                    year_data = rolling_data['rolling_returns'][year]
+                if year in self.rolling_data['rolling_returns']:
+                    year_data = self.rolling_data['rolling_returns'][year]
                     if 'error' in year_data:
                         print(f"{year} Year(s): {year_data['error']}")
                     else:
                         print(f"{year} Year(s): {year_data['min']}% / {year_data['avg']}% / {year_data['max']}%")
         
         # Print calendar year returns
-        if calendar_data:
+        if self.calendar_data:
             print("\nCalendar Year Returns:")
             print("-" * 60)
             
             for year in self.years_to_calculate:
-                if year in calendar_data['calendar_returns']:
-                    return_value = calendar_data['calendar_returns'][year]
+                if year in self.calendar_data['calendar_returns']:
+                    return_value = self.calendar_data['calendar_returns'][year]
                     if return_value is None:
                         print(f"{year}: N/A")
                     else:
                         print(f"{year}: {return_value}%")
         
         # Print Standard Deviation
-        if static_std_dev_data:
+        if self.static_std_dev_data:
             print("\nStatic Standard Deviation (Annualized Volatility %):")
             print("-" * 60)
             
             for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
-                if year in static_std_dev_data['std_devs']:
-                    std_dev_value = static_std_dev_data['std_devs'][year]
+                if year in self.static_std_dev_data['std_devs']:
+                    std_dev_value = self.static_std_dev_data['std_devs'][year]
                     if isinstance(std_dev_value, dict) and 'error' in std_dev_value:
                         print(f"{year} Year(s): {std_dev_value['error']}")
                     else:
                         print(f"{year} Year(s): {std_dev_value}%")
 
         # Print Downside Deviation
-        if static_downside_dev_data:
+        if self.static_downside_dev_data:
             print("\nStatic Downside Deviation (Annualized Downside Volatility %):")
             print("-" * 60)
             
             for year in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS:
-                if year in static_downside_dev_data['downside_devs']:
-                    dev_value = static_downside_dev_data['downside_devs'][year]
+                if year in self.static_downside_dev_data['downside_devs']:
+                    dev_value = self.static_downside_dev_data['downside_devs'][year]
                     if isinstance(dev_value, dict) and 'error' in dev_value:
                         print(f"{year} Year(s): {dev_value['error']}")
                     else:
                         print(f"{year} Year(s): {dev_value}%")
 
         # Print Rolling Standard Deviation
-        if rolling_std_dev_data:
+        if self.rolling_std_dev_data:
             print("\nRolling Standard Deviation (Volatility %):")
             print("-" * 60)
             
@@ -166,7 +158,7 @@ class MutualFundAnalyzer:
             print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
             print("-" * 80)
             
-            for item in rolling_std_dev_data['rolling_std_devs']:
+            for item in self.rolling_std_dev_data['rolling_std_devs']:
                 total_data = item['total_data']
                 window = item['rolling_window']
                 if 'error' in item:
@@ -175,20 +167,20 @@ class MutualFundAnalyzer:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
 
         # Print Sharpe Ratio
-        if static_sharpe_data:
+        if self.static_sharpe_data:
             print("\nSharpe Ratio:")
             print("-" * 60)
             
             for year in Constants.STATIC_SHARPE_RATIO_YEARS:
-                if year in static_sharpe_data['static_sharpe_ratios']:
-                    sharpe_value = static_sharpe_data['static_sharpe_ratios'][year]
+                if year in self.static_sharpe_data['static_sharpe_ratios']:
+                    sharpe_value = self.static_sharpe_data['static_sharpe_ratios'][year]
                     if isinstance(sharpe_value, dict) and 'error' in sharpe_value:
                         print(f"{year} Year(s): {sharpe_value['error']}")
                     else:
                         print(f"{year} Year(s): {sharpe_value}")
 
         # Print Rolling Sharpe Ratio
-        if rolling_sharpe_data:
+        if self.rolling_sharpe_data:
             print("\nRolling Sharpe Ratio:")
             print("-" * 60)
             
@@ -196,7 +188,7 @@ class MutualFundAnalyzer:
             print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
             print("-" * 80)
             
-            for item in rolling_sharpe_data['rolling_sharpe_ratios']:
+            for item in self.rolling_sharpe_data['rolling_sharpe_ratios']:
                 total_data = item['total_data']
                 window = item['rolling_window']
                 if 'error' in item:
@@ -205,20 +197,20 @@ class MutualFundAnalyzer:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
 
         # Print Sortino Ratio
-        if static_sortino_data:
+        if self.static_sortino_data:
             print("\nSortino Ratio:")
             print("-" * 60)
             
             for year in Constants.STATIC_SORTINO_RATIO_YEARS:
-                if year in static_sortino_data['static_sortino_ratios']:
-                    sortino_value = static_sortino_data['static_sortino_ratios'][year]
+                if year in self.static_sortino_data['static_sortino_ratios']:
+                    sortino_value = self.static_sortino_data['static_sortino_ratios'][year]
                     if isinstance(sortino_value, dict) and 'error' in sortino_value:
                         print(f"{year} Year(s): {sortino_value['error']}")
                     else:
                         print(f"{year} Year(s): {sortino_value}")
 
         # Print Rolling Sortino Ratio
-        if rolling_sortino_data:
+        if self.rolling_sortino_data:
             print("\nRolling Sortino Ratio:")
             print("-" * 60)
             
@@ -226,7 +218,7 @@ class MutualFundAnalyzer:
             print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
             print("-" * 80)
             
-            for item in rolling_sortino_data['rolling_sortino_ratios']:
+            for item in self.rolling_sortino_data['rolling_sortino_ratios']:
                 total_data = item['total_data']
                 window = item['rolling_window']
                 if 'error' in item:
@@ -235,15 +227,15 @@ class MutualFundAnalyzer:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
         
         # Print Max Drawdown
-        if static_drawdown_data:
+        if self.static_drawdown_data:
             print("\nMax Drawdown & Recovery Time:")
             print("-" * 60)
             print(f"{'Period':<15} {'Max Drawdown':<20} {'Recovery Time (Days)':<20}")
             print("-" * 60)
             
             for year in Constants.STATIC_DRAWDOWN_YEARS:
-                if year in static_drawdown_data['drawdowns']:
-                    dd_value = static_drawdown_data['drawdowns'][year]
+                if year in self.static_drawdown_data['drawdowns']:
+                    dd_value = self.static_drawdown_data['drawdowns'][year]
                     if isinstance(dd_value, dict) and 'error' in dd_value:
                         print(f"{year} Year(s): {dd_value['error']}")
                     else:
@@ -264,17 +256,17 @@ class MutualFundAnalyzer:
         if self.scheme_data is None:
             return
         
-        rolling_data = RollingReturnsCalculator.calculate(self.scheme_data)
-        calendar_data = CalendarYearReturnsCalculator.calculate(self.scheme_data, self.years_to_calculate)
-        static_std_dev_data = StaticStandardDeviationCalculator.calculate(self.scheme_data)
-        static_downside_dev_data = StaticDownsideDeviationCalculator.calculate(self.scheme_data)
-        rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
-        static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
-        rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
-        static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
-        rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
-        static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
-        self._display_metrics(rolling_data, calendar_data, static_std_dev_data, static_downside_dev_data, rolling_std_dev_data, static_sharpe_data, rolling_sharpe_data, static_sortino_data, rolling_sortino_data, static_drawdown_data)
+        self.rolling_data = RollingReturnsCalculator.calculate(self.scheme_data)
+        self.calendar_data = CalendarYearReturnsCalculator.calculate(self.scheme_data, self.years_to_calculate)
+        self.static_std_dev_data = StaticStandardDeviationCalculator.calculate(self.scheme_data)
+        self.static_downside_dev_data = StaticDownsideDeviationCalculator.calculate(self.scheme_data)
+        self.rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
+        self.static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
+        self.rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
+        self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
+        self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
+        self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+        self._display_metrics()
 
 def main() -> None:
     """
