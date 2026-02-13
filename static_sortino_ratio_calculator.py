@@ -8,7 +8,7 @@ class StaticSortinoRatioCalculator:
     """Calculates static Sortino Ratio for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate annualized Static Sortino Ratio for periods defined in Constants.STATIC_SORTINO_RATIO_YEARS.
         
@@ -16,13 +16,17 @@ class StaticSortinoRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and static_sortino_ratios data, or None if error occurs.
+            Dictionary with scheme_name and static_sortino_ratios data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         static_sortino_ratios = {}
+        
+        if df is None or df.empty:
+            for year in Constants.STATIC_SORTINO_RATIO_YEARS:
+                static_sortino_ratios[year] = {'error': 'No data available'}
+            return {'scheme_name': scheme_name, 'static_sortino_ratios': static_sortino_ratios}
         end_date = df.index[-1]
         
         for year in Constants.STATIC_SORTINO_RATIO_YEARS:
@@ -41,7 +45,7 @@ class StaticSortinoRatioCalculator:
                 # Calculate daily returns
                 daily_returns = relevant_df['nav'].pct_change().dropna()
                 
-                if daily_returns.empty:
+                if daily_returns.empty or len(daily_returns) < 2:
                     static_sortino_ratios[year] = {
                         'error': 'Insufficient valid returns for Sortino Ratio calculation'
                     }
@@ -79,6 +83,6 @@ class StaticSortinoRatioCalculator:
                 }
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'static_sortino_ratios': static_sortino_ratios
         }

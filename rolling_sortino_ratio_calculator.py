@@ -9,7 +9,7 @@ class RollingSortinoRatioCalculator:
     """Calculates rolling Sortino Ratio for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate rolling Sortino Ratio for configurations defined in Constants.ROLLING_SORTINO_RATIO_MAP.
         
@@ -17,13 +17,21 @@ class RollingSortinoRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_sortino_ratios data, or None if error occurs.
+            Dictionary with scheme_name and rolling_sortino_ratios data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         rolling_sortino_ratios = []
+        
+        if df is None or df.empty:
+            for config in Constants.ROLLING_SORTINO_RATIO_MAP:
+                rolling_sortino_ratios.append({
+                    'total_data': config['total_data'],
+                    'rolling_window': config['rolling_window'],
+                    'error': 'No data available'
+                })
+            return {'scheme_name': scheme_name, 'rolling_sortino_ratios': rolling_sortino_ratios}
         
         for config in Constants.ROLLING_SORTINO_RATIO_MAP:
             total_years = config['total_data']
@@ -103,6 +111,6 @@ class RollingSortinoRatioCalculator:
                 })
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'rolling_sortino_ratios': rolling_sortino_ratios
         }

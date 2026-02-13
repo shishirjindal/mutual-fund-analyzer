@@ -7,7 +7,7 @@ class RollingReturnsCalculator:
     """Calculates rolling returns for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate rolling returns for periods defined in Constants.ROLLING_YEARS using stored scheme data.
         
@@ -15,13 +15,17 @@ class RollingReturnsCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_returns data, or None if error occurs.
+            Dictionary with scheme_name and rolling_returns data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         rolling_returns = {}
+        
+        if df is None or df.empty:
+            for year in Constants.ROLLING_YEARS:
+                rolling_returns[year] = {'error': 'No data available'}
+            return {'scheme_name': scheme_name, 'rolling_returns': rolling_returns}
         
         for year in Constants.ROLLING_YEARS:
             days = year * Constants.TRADING_DAYS_PER_YEAR
@@ -66,6 +70,6 @@ class RollingReturnsCalculator:
             }
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'rolling_returns': rolling_returns
         }

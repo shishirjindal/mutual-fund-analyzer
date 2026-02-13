@@ -62,17 +62,17 @@ class InformationRatioCalculator:
                 
             try:
                 # Calculate daily returns
-                returns = relevant_df.pct_change().dropna()
+                daily_returns = relevant_df.pct_change().dropna()
                 
-                if returns.empty or len(returns) < 2:
+                if daily_returns.empty or len(daily_returns) < 2:
                     information_ratios[year] = {
                         'error': 'Insufficient valid returns for Information Ratio calculation'
                     }
                     continue
-                
-                scheme_returns = returns['scheme_nav']
-                benchmark_returns = returns['benchmark_nav']
-                
+
+                scheme_returns = daily_returns['scheme_nav']
+                benchmark_returns = daily_returns['benchmark_nav']
+
                 # Active Returns (Daily)
                 active_returns_daily = scheme_returns - benchmark_returns
                 

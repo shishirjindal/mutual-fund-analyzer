@@ -9,7 +9,7 @@ class RollingStandardDeviationCalculator:
     """Calculates rolling Standard Deviation (Volatility) for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate rolling Standard Deviation for configurations defined in Constants.ROLLING_STANDARD_DEVIATION_MAP.
         
@@ -17,10 +17,19 @@ class RollingStandardDeviationCalculator:
             scheme_data: Dictionary containing scheme data with 'data' key holding list of NAVs
             
         Returns:
-            Dictionary with scheme_name and rolling_std_devs data, or None if error occurs/no data.
+            Dictionary with scheme_name and rolling_std_devs data.
         """
-        if scheme_data is None or 'data' not in scheme_data or not scheme_data['data']:
-            return None
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
+        
+        if 'data' not in scheme_data or not scheme_data['data']:
+            rolling_std_devs = []
+            for config in Constants.ROLLING_STANDARD_DEVIATION_MAP:
+                rolling_std_devs.append({
+                    'total_data': config['total_data'],
+                    'rolling_window': config['rolling_window'],
+                    'error': 'No data available'
+                })
+            return {'scheme_name': scheme_name, 'rolling_std_devs': rolling_std_devs}
         
         historical_data = scheme_data['data']
         rolling_std_devs = []
@@ -104,6 +113,6 @@ class RollingStandardDeviationCalculator:
                 continue
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'rolling_std_devs': rolling_std_devs
         }

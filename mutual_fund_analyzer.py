@@ -52,19 +52,19 @@ class MutualFundAnalyzer:
         self.benchmark_data = DataFetcher.fetch_benchmark_data()
         
         # Initialize results variables
-        self.rolling_data: Optional[Dict[str, Any]] = None
-        self.calendar_data: Optional[Dict[str, Any]] = None
-        self.static_std_dev_data: Optional[Dict[str, Any]] = None
-        self.static_downside_dev_data: Optional[Dict[str, Any]] = None
-        self.rolling_std_dev_data: Optional[Dict[str, Any]] = None
-        self.static_sharpe_data: Optional[Dict[str, Any]] = None
-        self.rolling_sharpe_data: Optional[Dict[str, Any]] = None
-        self.static_sortino_data: Optional[Dict[str, Any]] = None
-        self.rolling_sortino_data: Optional[Dict[str, Any]] = None
-        self.static_drawdown_data: Optional[Dict[str, Any]] = None
-        self.static_alpha_data: Optional[Dict[str, Any]] = None
-        self.static_beta_data: Optional[Dict[str, Any]] = None
-        self.information_ratio_data: Optional[Dict[str, Any]] = None
+        self.rolling_data: Dict[str, Any] = {}
+        self.calendar_data: Dict[str, Any] = {}
+        self.static_std_dev_data: Dict[str, Any] = {}
+        self.static_downside_dev_data: Dict[str, Any] = {}
+        self.rolling_std_dev_data: Dict[str, Any] = {}
+        self.static_sharpe_data: Dict[str, Any] = {}
+        self.rolling_sharpe_data: Dict[str, Any] = {}
+        self.static_sortino_data: Dict[str, Any] = {}
+        self.rolling_sortino_data: Dict[str, Any] = {}
+        self.static_drawdown_data: Dict[str, Any] = {}
+        self.static_alpha_data: Dict[str, Any] = {}
+        self.static_beta_data: Dict[str, Any] = {}
+        self.information_ratio_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -76,11 +76,11 @@ class MutualFundAnalyzer:
         
         Uses instance variables for data.
         """
-        if (self.rolling_data is None and self.calendar_data is None and self.static_std_dev_data is None and 
-            self.static_downside_dev_data is None and self.rolling_std_dev_data is None and self.static_sharpe_data is None and 
-            self.rolling_sharpe_data is None and self.static_sortino_data is None and self.rolling_sortino_data is None and
-            self.static_drawdown_data is None and self.static_alpha_data is None and self.static_beta_data is None and
-            self.information_ratio_data is None):
+        if (not self.rolling_data and not self.calendar_data and not self.static_std_dev_data and 
+            not self.static_downside_dev_data and not self.rolling_std_dev_data and not self.static_sharpe_data and 
+            not self.rolling_sharpe_data and not self.static_sortino_data and not self.rolling_sortino_data and
+            not self.static_drawdown_data and not self.static_alpha_data and not self.static_beta_data and
+            not self.information_ratio_data):
             return
         
         scheme_name = 'Unknown'
@@ -314,10 +314,14 @@ class MutualFundAnalyzer:
         self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
         self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+
+        # Calculate Static Alpha, Beta, and Information Ratio if benchmark data is available
         if self.benchmark_data:
             self.static_alpha_data = StaticAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.information_ratio_data = InformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+
+        # Display all metrics
         self._display_metrics()
 
 def main() -> None:

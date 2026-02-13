@@ -7,7 +7,7 @@ class CalendarYearReturnsCalculator:
     """Calculates calendar year returns for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]], years_to_calculate: List[int]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any], years_to_calculate: List[int]) -> Dict[str, Any]:
         """
         Calculate calendar year returns for the specified years using stored scheme data.
         
@@ -16,13 +16,17 @@ class CalendarYearReturnsCalculator:
             years_to_calculate: List of years to calculate returns for
             
         Returns:
-            Dictionary with scheme_name and calendar_returns data, or None if error occurs.
+            Dictionary with scheme_name and calendar_returns data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         calendar_returns = {}
+        
+        if df is None or df.empty:
+            for year in years_to_calculate:
+                calendar_returns[year] = None
+            return {'scheme_name': scheme_name, 'calendar_returns': calendar_returns}
         
         for year in years_to_calculate:
             try:
@@ -64,6 +68,6 @@ class CalendarYearReturnsCalculator:
                 calendar_returns[year] = None
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'calendar_returns': calendar_returns
         }

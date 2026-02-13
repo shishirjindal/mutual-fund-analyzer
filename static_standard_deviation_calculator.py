@@ -8,7 +8,7 @@ class StaticStandardDeviationCalculator:
     """Calculates annualized static standard deviation (volatility) for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate annualized Static Standard Deviation for periods defined in Constants.STATIC_STANDARD_DEVIATION_YEARS.
         
@@ -16,13 +16,17 @@ class StaticStandardDeviationCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and std_devs data, or None if error occurs.
+            Dictionary with scheme_name and std_devs data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         std_devs = {}
+        
+        if df is None or df.empty:
+            for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
+                std_devs[year] = {'error': 'No data available'}
+            return {'scheme_name': scheme_name, 'std_devs': std_devs}
         end_date = df.index[-1]
         
         for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
@@ -41,7 +45,7 @@ class StaticStandardDeviationCalculator:
                 # Calculate daily returns
                 daily_returns = relevant_df['nav'].pct_change().dropna()
                 
-                if daily_returns.empty:
+                if daily_returns.empty or len(daily_returns) < 2:
                     std_devs[year] = {
                         'error': 'Insufficient valid returns for Standard Deviation calculation'
                     }
@@ -63,6 +67,6 @@ class StaticStandardDeviationCalculator:
                 }
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'std_devs': std_devs
         }

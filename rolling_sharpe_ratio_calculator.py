@@ -8,7 +8,7 @@ class RollingSharpeRatioCalculator:
     """Calculates rolling Sharpe Ratio for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate rolling Sharpe Ratio for configurations defined in Constants.ROLLING_SHARPE_RATIO_MAP.
         
@@ -16,13 +16,21 @@ class RollingSharpeRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_sharpe_ratios data, or None if error occurs.
+            Dictionary with scheme_name and rolling_sharpe_ratios data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         rolling_sharpe_ratios = []
+        
+        if df is None or df.empty:
+            for config in Constants.ROLLING_SHARPE_RATIO_MAP:
+                rolling_sharpe_ratios.append({
+                    'total_data': config['total_data'],
+                    'rolling_window': config['rolling_window'],
+                    'error': 'No data available'
+                })
+            return {'scheme_name': scheme_name, 'rolling_sharpe_ratios': rolling_sharpe_ratios}
         
         for config in Constants.ROLLING_SHARPE_RATIO_MAP:
             total_years = config['total_data']
@@ -94,6 +102,6 @@ class RollingSharpeRatioCalculator:
                 })
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'rolling_sharpe_ratios': rolling_sharpe_ratios
         }

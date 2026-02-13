@@ -61,16 +61,16 @@ class StaticBetaCalculator:
                 
             try:
                 # Calculate daily returns
-                returns = relevant_df.pct_change().dropna()
+                daily_returns = relevant_df.pct_change().dropna()
                 
-                if returns.empty or len(returns) < 2:
+                if daily_returns.empty or len(daily_returns) < 2:
                     static_betas[year] = {
                         'error': 'Insufficient valid returns for Beta calculation'
                     }
                     continue
                 
-                scheme_returns = returns['scheme_nav']
-                benchmark_returns = returns['benchmark_nav']
+                scheme_returns = daily_returns['scheme_nav']
+                benchmark_returns = daily_returns['benchmark_nav']
                 
                 # Calculate Covariance and Variance
                 # cov() returns a matrix, we need the scalar value

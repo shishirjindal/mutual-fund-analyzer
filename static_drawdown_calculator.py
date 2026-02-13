@@ -8,7 +8,7 @@ class StaticDrawdownCalculator:
     """Calculates Maximum Drawdown and Drawdown Duration for mutual funds using Pandas."""
     
     @staticmethod
-    def calculate(scheme_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def calculate(scheme_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate Maximum Drawdown and Drawdown Duration for periods defined in Constants.STATIC_DRAWDOWN_YEARS.
         
@@ -16,13 +16,17 @@ class StaticDrawdownCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and drawdowns data, or None if error occurs.
+            Dictionary with scheme_name and drawdowns data.
         """
+        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
-        if df is None or df.empty:
-            return None
         
         drawdowns = {}
+        
+        if df is None or df.empty:
+            for year in Constants.STATIC_DRAWDOWN_YEARS:
+                drawdowns[year] = {'error': 'No data available'}
+            return {'scheme_name': scheme_name, 'drawdowns': drawdowns}
         end_date = df.index[-1]
         
         for year in Constants.STATIC_DRAWDOWN_YEARS:
@@ -78,6 +82,6 @@ class StaticDrawdownCalculator:
                 drawdowns[year] = {'error': f'Error calculating Drawdown: {str(e)}'}
         
         return {
-            'scheme_name': scheme_data['scheme_name'],
+            'scheme_name': scheme_name,
             'drawdowns': drawdowns
         }
