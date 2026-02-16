@@ -57,8 +57,8 @@ class Constants:
     # Static Beta configuration
     STATIC_BETA_YEARS = [1, 3, 5]
 
-    # Information Ratio configuration
-    INFORMATION_RATIO_YEARS = [1, 3, 5]
+    # Static Information Ratio configuration
+    STATIC_INFORMATION_RATIO_YEARS = [1, 3, 5]
 
     # Rolling Sharpe ratio configuration
     ROLLING_SHARPE_RATIO_MAP = [

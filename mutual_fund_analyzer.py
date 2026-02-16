@@ -28,7 +28,7 @@ from rolling_sortino_ratio_calculator import RollingSortinoRatioCalculator
 from static_drawdown_calculator import StaticDrawdownCalculator
 from static_alpha_calculator import StaticAlphaCalculator
 from static_beta_calculator import StaticBetaCalculator
-from information_ratio_calculator import InformationRatioCalculator
+from static_information_ratio_calculator import StaticInformationRatioCalculator
 
 
 class MutualFundAnalyzer:
@@ -64,7 +64,7 @@ class MutualFundAnalyzer:
         self.static_drawdown_data: Dict[str, Any] = {}
         self.static_alpha_data: Dict[str, Any] = {}
         self.static_beta_data: Dict[str, Any] = {}
-        self.information_ratio_data: Dict[str, Any] = {}
+        self.static_information_ratio_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -80,7 +80,7 @@ class MutualFundAnalyzer:
             not self.static_downside_dev_data and not self.rolling_std_dev_data and not self.static_sharpe_data and 
             not self.rolling_sharpe_data and not self.static_sortino_data and not self.rolling_sortino_data and
             not self.static_drawdown_data and not self.static_alpha_data and not self.static_beta_data and
-            not self.information_ratio_data):
+            not self.static_information_ratio_data):
             return
         
         scheme_name = 'Unknown'
@@ -276,14 +276,14 @@ class MutualFundAnalyzer:
                     else:
                         print(f"{year} Year(s): {beta_value}")
 
-        # Print Information Ratio
-        if self.information_ratio_data:
-            print("\nInformation Ratio:")
+        # Print Static Information Ratio
+        if self.static_information_ratio_data:
+            print("\nStatic Information Ratio:")
             print("-" * 60)
             
-            for year in Constants.INFORMATION_RATIO_YEARS:
-                if year in self.information_ratio_data['information_ratios']:
-                    ir_value = self.information_ratio_data['information_ratios'][year]
+            for year in Constants.STATIC_INFORMATION_RATIO_YEARS:
+                if year in self.static_information_ratio_data['static_information_ratios']:
+                    ir_value = self.static_information_ratio_data['static_information_ratios'][year]
                     if isinstance(ir_value, dict) and 'error' in ir_value:
                         print(f"{year} Year(s): {ir_value['error']}")
                     else:
@@ -319,7 +319,7 @@ class MutualFundAnalyzer:
         if self.benchmark_data:
             self.static_alpha_data = StaticAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.information_ratio_data = InformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.static_information_ratio_data = StaticInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
 
         # Display all metrics
         self._display_metrics()
