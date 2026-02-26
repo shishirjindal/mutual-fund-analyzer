@@ -19,35 +19,16 @@ class RollingHitRatioCalculator:
             Dictionary with scheme_name and rolling_hit_ratios data.
         """
         scheme_name = scheme_data.get('scheme_name', 'Unknown')
-        df_scheme = Utils.convert_to_dataframe(scheme_data)
-        df_benchmark = Utils.convert_to_dataframe(benchmark_data)
-        
         rolling_hit_ratios = []
         
-        if df_scheme is None or df_scheme.empty or df_benchmark is None or df_benchmark.empty:
-            for config in Constants.ROLLING_HIT_RATIO_MAP:
-                rolling_hit_ratios.append({
-                    'total_data': config['total_data'],
-                    'rolling_window': config['rolling_window'],
-                    'error': 'No data available'
-                })
-            return {'scheme_name': scheme_name, 'rolling_hit_ratios': rolling_hit_ratios}
-            
-        # Align dataframes
-        combined_df = pd.merge(
-            df_scheme['nav'].rename('scheme_nav'), 
-            df_benchmark['nav'].rename('benchmark_nav'), 
-            left_index=True, 
-            right_index=True, 
-            how='inner'
-        )
+        combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
         
-        if combined_df.empty:
+        if combined_df is None:
             for config in Constants.ROLLING_HIT_RATIO_MAP:
                 rolling_hit_ratios.append({
                     'total_data': config['total_data'],
                     'rolling_window': config['rolling_window'],
-                    'error': 'No overlapping data with benchmark'
+                    'error': 'Data alignment failed or no overlapping data'
                 })
             return {'scheme_name': scheme_name, 'rolling_hit_ratios': rolling_hit_ratios}
             

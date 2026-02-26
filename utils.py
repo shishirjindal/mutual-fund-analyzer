@@ -101,8 +101,41 @@ class Utils:
             df = df[df['nav'] != 0]
             
             return df
-        except Exception:
+        except (ValueError, KeyError, TypeError, Exception):
             return None
+
+    @staticmethod
+    def align_dataframes(scheme_data: Dict[str, Any], benchmark_data: Dict[str, Any]) -> Optional[pd.DataFrame]:
+        """
+        Align scheme and benchmark DataFrames by date using an inner join.
+        
+        Args:
+            scheme_data: Dictionary containing scheme data
+            benchmark_data: Dictionary containing benchmark data
+            
+        Returns:
+            Pandas DataFrame with DateTime index and 'scheme_nav', 'benchmark_nav' columns,
+            or None if alignment fails or results in empty DataFrame.
+        """
+        df_scheme = Utils.convert_to_dataframe(scheme_data)
+        df_benchmark = Utils.convert_to_dataframe(benchmark_data)
+        
+        if df_scheme is None or df_scheme.empty or df_benchmark is None or df_benchmark.empty:
+            return None
+            
+        # Align dataframes on dates using inner join
+        combined_df = pd.merge(
+            df_scheme['nav'].rename('scheme_nav'), 
+            df_benchmark['nav'].rename('benchmark_nav'), 
+            left_index=True, 
+            right_index=True, 
+            how='inner'
+        )
+        
+        if combined_df.empty:
+            return None
+            
+        return combined_df
 
     @staticmethod
     def calculate_downside_deviation(returns: pd.Series, target: float = 0.0) -> float:

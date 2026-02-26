@@ -20,29 +20,14 @@ class StaticAlphaCalculator:
         Returns:
             Dictionary with static_alphas data.
         """
-        df_scheme = Utils.convert_to_dataframe(scheme_data)
-        df_benchmark = Utils.convert_to_dataframe(benchmark_data)
-        
         scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_alphas = {}
         
-        if df_scheme is None or df_scheme.empty or df_benchmark is None or df_benchmark.empty:
-             for year in Constants.STATIC_ALPHA_YEARS:
-                 static_alphas[year] = {'error': 'Data conversion failed or empty data'}
-             return {'scheme_name': scheme_name, 'static_alphas': static_alphas}
+        combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
         
-        # Align dataframes on dates
-        combined_df = pd.merge(
-            df_scheme['nav'].rename('scheme_nav'), 
-            df_benchmark['nav'].rename('benchmark_nav'), 
-            left_index=True, 
-            right_index=True, 
-            how='inner'
-        )
-        
-        if combined_df.empty:
+        if combined_df is None:
              for year in Constants.STATIC_ALPHA_YEARS:
-                static_alphas[year] = {'error': 'No overlapping data with benchmark'}
+                 static_alphas[year] = {'error': 'Data alignment failed or no overlapping data'}
              return {'scheme_name': scheme_name, 'static_alphas': static_alphas}
 
         end_date = combined_df.index[-1]

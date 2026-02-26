@@ -92,17 +92,6 @@ class MutualFundAnalyzer:
         
         Uses instance variables for data.
         """
-        if (not self.rolling_data and not self.calendar_data and not self.static_std_dev_data and 
-            not self.static_downside_dev_data and not self.rolling_std_dev_data and not self.static_sharpe_data and 
-            not self.rolling_sharpe_data and not self.static_sortino_data and not self.rolling_sortino_data and
-            not self.static_drawdown_data and not self.static_alpha_data and not self.static_beta_data and
-            not self.static_information_ratio_data and not self.static_treynor_ratio_data and
-            not self.static_calmar_ratio_data and not self.static_ulcer_index_data and
-            not self.rolling_alpha_data and not self.rolling_beta_data and
-            not self.rolling_information_ratio_data and
-            not self.static_hit_ratio_data and not self.rolling_hit_ratio_data):
-            return
-        
         # Get scheme name from scheme_data (guaranteed to exist if we reach here)
         scheme_name = self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown'
         
@@ -135,138 +124,27 @@ class MutualFundAnalyzer:
                     else:
                         print(f"{year}: {return_value}%")
         
-        # Print Standard Deviation
-        if self.static_std_dev_data:
-            print("\nStatic Standard Deviation (Annualized Volatility %):")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
-                if year in self.static_std_dev_data['std_devs']:
-                    std_dev_value = self.static_std_dev_data['std_devs'][year]
-                    if isinstance(std_dev_value, dict) and 'error' in std_dev_value:
-                        print(f"{year} Year(s): {std_dev_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {std_dev_value}%")
+        # Static Metrics
+        self._print_static_metrics("Static Standard Deviation (Annualized Volatility %)", self.static_std_dev_data, 'std_devs', "%")
+        self._print_static_metrics("Static Downside Deviation (Annualized Downside Volatility %)", self.static_downside_dev_data, 'downside_devs', "%")
+        self._print_static_metrics("Static Hit Ratio (Outperformance %)", self.static_hit_ratio_data, 'static_hit_ratios', "%")
+        self._print_static_metrics("Sharpe Ratio", self.static_sharpe_data, 'static_sharpe_ratios')
+        self._print_static_metrics("Sortino Ratio", self.static_sortino_data, 'static_sortino_ratios')
+        self._print_static_metrics("Static Alpha (Jensen's Alpha %)", self.static_alpha_data, 'static_alphas', "%")
+        self._print_static_metrics("Static Beta", self.static_beta_data, 'static_betas')
+        self._print_static_metrics("Static Information Ratio", self.static_information_ratio_data, 'static_information_ratios')
+        self._print_static_metrics("Static Treynor Ratio", self.static_treynor_ratio_data, 'static_treynor_ratios')
+        self._print_static_metrics("Static Calmar Ratio", self.static_calmar_ratio_data, 'static_calmar_ratios')
+        self._print_static_metrics("Static Ulcer Index", self.static_ulcer_index_data, 'static_ulcer_indices')
 
-        # Print Downside Deviation
-        if self.static_downside_dev_data:
-            print("\nStatic Downside Deviation (Annualized Downside Volatility %):")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS:
-                if year in self.static_downside_dev_data['downside_devs']:
-                    dev_value = self.static_downside_dev_data['downside_devs'][year]
-                    if isinstance(dev_value, dict) and 'error' in dev_value:
-                        print(f"{year} Year(s): {dev_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {dev_value}%")
-
-        # Print Rolling Standard Deviation
-        if self.rolling_std_dev_data:
-            print("\nRolling Standard Deviation (Volatility %):")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            
-            for item in self.rolling_std_dev_data['rolling_std_devs']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
-
-        # Print Static Hit Ratio
-        if self.static_hit_ratio_data:
-            print("\nStatic Hit Ratio (Outperformance %):")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_HIT_RATIO_YEARS:
-                if year in self.static_hit_ratio_data['static_hit_ratios']:
-                    hit_value = self.static_hit_ratio_data['static_hit_ratios'][year]
-                    if isinstance(hit_value, dict) and 'error' in hit_value:
-                        print(f"{year} Year(s): {hit_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {hit_value}%")
-
-        # Print Rolling Hit Ratio
-        if self.rolling_hit_ratio_data:
-            print("\nRolling Hit Ratio (Outperformance %):")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            
-            for item in self.rolling_hit_ratio_data['rolling_hit_ratios']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10}% {item['mean']:<10}% {item['min']:<10}% {item['max']:<10}% {item['latest']:<10}%")
-
-        # Print Sharpe Ratio
-        if self.static_sharpe_data:
-            print("\nSharpe Ratio:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_SHARPE_RATIO_YEARS:
-                if year in self.static_sharpe_data['static_sharpe_ratios']:
-                    sharpe_value = self.static_sharpe_data['static_sharpe_ratios'][year]
-                    if isinstance(sharpe_value, dict) and 'error' in sharpe_value:
-                        print(f"{year} Year(s): {sharpe_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {sharpe_value}")
-
-        # Print Rolling Sharpe Ratio
-        if self.rolling_sharpe_data:
-            print("\nRolling Sharpe Ratio:")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
-            print("-" * 80)
-            
-            for item in self.rolling_sharpe_data['rolling_sharpe_ratios']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
-
-        # Print Sortino Ratio
-        if self.static_sortino_data:
-            print("\nSortino Ratio:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_SORTINO_RATIO_YEARS:
-                if year in self.static_sortino_data['static_sortino_ratios']:
-                    sortino_value = self.static_sortino_data['static_sortino_ratios'][year]
-                    if isinstance(sortino_value, dict) and 'error' in sortino_value:
-                        print(f"{year} Year(s): {sortino_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {sortino_value}")
-
-        # Print Rolling Sortino Ratio
-        if self.rolling_sortino_data:
-            print("\nRolling Sortino Ratio:")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
-            print("-" * 80)
-            
-            for item in self.rolling_sortino_data['rolling_sortino_ratios']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
+        # Rolling Metrics Tables
+        self._print_rolling_table("Rolling Standard Deviation (Volatility %)", self.rolling_std_dev_data, 'rolling_std_devs')
+        self._print_rolling_table("Rolling Hit Ratio (Outperformance %)", self.rolling_hit_ratio_data, 'rolling_hit_ratios', is_percentage=True)
+        self._print_rolling_table("Rolling Sharpe Ratio", self.rolling_sharpe_data, 'rolling_sharpe_ratios', is_ratio=True)
+        self._print_rolling_table("Rolling Sortino Ratio", self.rolling_sortino_data, 'rolling_sortino_ratios', is_ratio=True)
+        self._print_rolling_table("Rolling Alpha (Jensen's Alpha %)", self.rolling_alpha_data, 'rolling_alphas')
+        self._print_rolling_table("Rolling Beta", self.rolling_beta_data, 'rolling_betas')
+        self._print_rolling_table("Rolling Information Ratio", self.rolling_information_ratio_data, 'rolling_information_ratios')
         
         # Print Max Drawdown
         if self.static_drawdown_data:
@@ -282,137 +160,53 @@ class MutualFundAnalyzer:
                         print(f"{year} Year(s): {dd_value['error']}")
                     else:
                         print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
-
-        # Print Static Alpha
-        if self.static_alpha_data:
-            print("\nStatic Alpha (Jensen's Alpha %):")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_ALPHA_YEARS:
-                if year in self.static_alpha_data['static_alphas']:
-                    alpha_value = self.static_alpha_data['static_alphas'][year]
-                    if isinstance(alpha_value, dict) and 'error' in alpha_value:
-                        print(f"{year} Year(s): {alpha_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {alpha_value}%")
-
-        # Print Static Beta
-        if self.static_beta_data:
-            print("\nStatic Beta:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_BETA_YEARS:
-                if year in self.static_beta_data['static_betas']:
-                    beta_value = self.static_beta_data['static_betas'][year]
-                    if isinstance(beta_value, dict) and 'error' in beta_value:
-                        print(f"{year} Year(s): {beta_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {beta_value}")
-
-        # Print Static Information Ratio
-        if self.static_information_ratio_data:
-            print("\nStatic Information Ratio:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_INFORMATION_RATIO_YEARS:
-                if year in self.static_information_ratio_data['static_information_ratios']:
-                    ir_value = self.static_information_ratio_data['static_information_ratios'][year]
-                    if isinstance(ir_value, dict) and 'error' in ir_value:
-                        print(f"{year} Year(s): {ir_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {ir_value}")
-
-        # Print Static Treynor Ratio
-        if self.static_treynor_ratio_data:
-            print("\nStatic Treynor Ratio:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_TREYNOR_RATIO_YEARS:
-                if year in self.static_treynor_ratio_data['static_treynor_ratios']:
-                    treynor_value = self.static_treynor_ratio_data['static_treynor_ratios'][year]
-                    if isinstance(treynor_value, dict) and 'error' in treynor_value:
-                        print(f"{year} Year(s): {treynor_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {treynor_value}")
-
-        # Print Static Calmar Ratio
-        if self.static_calmar_ratio_data:
-            print("\nStatic Calmar Ratio:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_CALMAR_RATIO_YEARS:
-                if year in self.static_calmar_ratio_data['static_calmar_ratios']:
-                    calmar_value = self.static_calmar_ratio_data['static_calmar_ratios'][year]
-                    if isinstance(calmar_value, dict) and 'error' in calmar_value:
-                        print(f"{year} Year(s): {calmar_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {calmar_value}")
-
-        # Print Static Ulcer Index
-        if self.static_ulcer_index_data:
-            print("\nStatic Ulcer Index:")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_ULCER_INDEX_YEARS:
-                if year in self.static_ulcer_index_data['static_ulcer_indices']:
-                    ulcer_value = self.static_ulcer_index_data['static_ulcer_indices'][year]
-                    if isinstance(ulcer_value, dict) and 'error' in ulcer_value:
-                        print(f"{year} Year(s): {ulcer_value['error']}")
-                    else:
-                        print(f"{year} Year(s): {ulcer_value}")
-
-        # Print Rolling Alpha
-        if self.rolling_alpha_data:
-            print("\nRolling Alpha (Jensen's Alpha %):")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            
-            for item in self.rolling_alpha_data['rolling_alphas']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
-
-        # Print Rolling Beta
-        if self.rolling_beta_data:
-            print("\nRolling Beta:")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            
-            for item in self.rolling_beta_data['rolling_betas']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
-
-        # Print Rolling Information Ratio
-        if self.rolling_information_ratio_data:
-            print("\nRolling Information Ratio:")
-            print("-" * 60)
-            
-            # Print column headers
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            
-            for item in self.rolling_information_ratio_data['rolling_information_ratios']:
-                total_data = item['total_data']
-                window = item['rolling_window']
-                if 'error' in item:
-                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
-                else:
-                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
         
         print("=" * 60)
+
+    def _print_static_metrics(self, title: str, data: Dict[str, Any], key: str, unit: str = "") -> None:
+        """Helper to print static metrics in a consistent format."""
+        if not data or key not in data:
+            return
+            
+        print(f"\n{title}:")
+        print("-" * 60)
+        
+        for period, value in data[key].items():
+            if isinstance(value, dict) and 'error' in value:
+                print(f"{period} Year(s): {value['error']}")
+            else:
+                print(f"{period} Year(s): {value}{unit}")
+
+    def _print_rolling_table(self, title: str, data: Dict[str, Any], key: str, is_ratio: bool = False, is_percentage: bool = False) -> None:
+        """Helper to print rolling metrics tables in a consistent format."""
+        if not data or key not in data:
+            return
+            
+        print(f"\n{title}:")
+        print("-" * 60)
+        
+        unit = "%" if is_percentage else ""
+        
+        if is_ratio:
+            # Format for Sharpe/Sortino ratios
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
+            print("-" * 80)
+            for item in data[key]:
+                w, d = item['rolling_window'], item['total_data']
+                if 'error' in item:
+                    print(f"{w:<10} {d:<10} Error: {item['error']}")
+                else:
+                    print(f"{w:<10} {d:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
+        else:
+            # Standard format for Alpha, Beta, Std Dev, etc.
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
+            print("-" * 80)
+            for item in data[key]:
+                w, d = item['rolling_window'], item['total_data']
+                if 'error' in item:
+                    print(f"{w:<10} {d:<10} Error: {item['error']}")
+                else:
+                    print(f"{w:<10} {d:<10} {item['median']}{unit:<9} {item['mean']}{unit:<9} {item['min']}{unit:<9} {item['max']}{unit:<9} {item['latest']}{unit:<9}")
     
     def process_scheme(self) -> None:
         """
