@@ -24,6 +24,7 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Rolling Information Ratio**: Calculates rolling Information Ratio metrics for configured windows
 - **Static Hit Ratio**: Calculates Hit Ratio (Percentage of outperformance days) for 1, 3, and 5 years
 - **Rolling Hit Ratio**: Calculates rolling Hit Ratio metrics for configured windows
+- **Rolling Max Drawdown**: Calculates rolling maximum drawdown metrics for configured windows
 - **Static Treynor Ratio**: Calculates Treynor Ratio (Excess Return / Beta) for 1, 3, and 5 years
 - **Static Calmar Ratio**: Calculates Calmar Ratio (Annualized Return / Max Drawdown) for 3 and 5 years
 - **Static Ulcer Index**: Calculates Ulcer Index (Measure of downside risk) for 1, 3, and 5 years
@@ -52,6 +53,7 @@ The project is modularized into the following components:
 - **`rolling_information_ratio_calculator.py`**: Calculates rolling Information Ratio.
 - **`static_hit_ratio_calculator.py`**: Calculates static Hit Ratio.
 - **`rolling_hit_ratio_calculator.py`**: Calculates rolling Hit Ratio.
+- **`rolling_drawdown_calculator.py`**: Calculates rolling Maximum Drawdown.
 - **`static_treynor_ratio_calculator.py`**: Calculates static Treynor Ratio.
 - **`static_calmar_ratio_calculator.py`**: Calculates static Calmar Ratio.
 - **`static_ulcer_index_calculator.py`**: Calculates static Ulcer Index.
@@ -236,3 +238,4 @@ Period          Max Drawdown         Recovery Time (Days)
 19. **Rolling Information Ratio**: Distribution of Information Ratio over moving windows.
 20. **Static Hit Ratio**: The percentage of days the fund's return was higher than the benchmark's return over fixed periods.
 21. **Rolling Hit Ratio**: Distribution of the Hit Ratio over moving windows.
+22. **Rolling Max Drawdown**: Distribution of the Maximum Drawdown over moving windows.

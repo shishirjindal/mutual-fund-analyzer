@@ -37,6 +37,7 @@ from rolling_beta_calculator import RollingBetaCalculator
 from rolling_information_ratio_calculator import RollingInformationRatioCalculator
 from static_hit_ratio_calculator import StaticHitRatioCalculator
 from rolling_hit_ratio_calculator import RollingHitRatioCalculator
+from rolling_drawdown_calculator import RollingDrawdownCalculator
 
 
 class MutualFundAnalyzer:
@@ -81,6 +82,7 @@ class MutualFundAnalyzer:
         self.rolling_information_ratio_data: Dict[str, Any] = {}
         self.static_hit_ratio_data: Dict[str, Any] = {}
         self.rolling_hit_ratio_data: Dict[str, Any] = {}
+        self.rolling_drawdown_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -145,23 +147,30 @@ class MutualFundAnalyzer:
         self._print_rolling_table("Rolling Alpha (Jensen's Alpha %)", self.rolling_alpha_data, 'rolling_alphas')
         self._print_rolling_table("Rolling Beta", self.rolling_beta_data, 'rolling_betas')
         self._print_rolling_table("Rolling Information Ratio", self.rolling_information_ratio_data, 'rolling_information_ratios')
+        self._print_rolling_table("Rolling Max Drawdown", self.rolling_drawdown_data, 'rolling_drawdowns', is_percentage=True)
         
-        # Print Max Drawdown
-        if self.static_drawdown_data:
-            print("\nMax Drawdown & Recovery Time:")
-            print("-" * 60)
-            print(f"{'Period':<15} {'Max Drawdown':<20} {'Recovery Time (Days)':<20}")
-            print("-" * 60)
-            
-            for year in Constants.STATIC_DRAWDOWN_YEARS:
-                if year in self.static_drawdown_data['drawdowns']:
-                    dd_value = self.static_drawdown_data['drawdowns'][year]
-                    if isinstance(dd_value, dict) and 'error' in dd_value:
-                        print(f"{year} Year(s): {dd_value['error']}")
-                    else:
-                        print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
+        # Static Max Drawdown Table
+        self._print_static_drawdown_table()
         
         print("=" * 60)
+
+    def _print_static_drawdown_table(self) -> None:
+        """Helper to print the static max drawdown and recovery table."""
+        if not self.static_drawdown_data or 'drawdowns' not in self.static_drawdown_data:
+            return
+            
+        print("\nMax Drawdown & Recovery Time:")
+        print("-" * 60)
+        print(f"{'Period':<15} {'Max Drawdown':<20} {'Recovery Time (Days)':<20}")
+        print("-" * 60)
+        
+        for year in Constants.STATIC_DRAWDOWN_YEARS:
+            if year in self.static_drawdown_data['drawdowns']:
+                dd_value = self.static_drawdown_data['drawdowns'][year]
+                if isinstance(dd_value, dict) and 'error' in dd_value:
+                    print(f"{year} Year(s): {dd_value['error']}")
+                else:
+                    print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
 
     def _print_static_metrics(self, title: str, data: Dict[str, Any], key: str, unit: str = "") -> None:
         """Helper to print static metrics in a consistent format."""
@@ -231,6 +240,7 @@ class MutualFundAnalyzer:
         self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
         self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+        self.rolling_drawdown_data = RollingDrawdownCalculator.calculate(self.scheme_data)
         self.static_calmar_ratio_data = StaticCalmarRatioCalculator.calculate(self.scheme_data)
         self.static_ulcer_index_data = StaticUlcerIndexCalculator.calculate(self.scheme_data)
 
