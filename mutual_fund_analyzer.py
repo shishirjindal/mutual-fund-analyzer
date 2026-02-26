@@ -29,6 +29,9 @@ from static_drawdown_calculator import StaticDrawdownCalculator
 from static_alpha_calculator import StaticAlphaCalculator
 from static_beta_calculator import StaticBetaCalculator
 from static_information_ratio_calculator import StaticInformationRatioCalculator
+from static_treynor_ratio_calculator import StaticTreynorRatioCalculator
+from static_calmar_ratio_calculator import StaticCalmarRatioCalculator
+from static_ulcer_index_calculator import StaticUlcerIndexCalculator
 
 
 class MutualFundAnalyzer:
@@ -65,6 +68,9 @@ class MutualFundAnalyzer:
         self.static_alpha_data: Dict[str, Any] = {}
         self.static_beta_data: Dict[str, Any] = {}
         self.static_information_ratio_data: Dict[str, Any] = {}
+        self.static_treynor_ratio_data: Dict[str, Any] = {}
+        self.static_calmar_ratio_data: Dict[str, Any] = {}
+        self.static_ulcer_index_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -80,28 +86,12 @@ class MutualFundAnalyzer:
             not self.static_downside_dev_data and not self.rolling_std_dev_data and not self.static_sharpe_data and 
             not self.rolling_sharpe_data and not self.static_sortino_data and not self.rolling_sortino_data and
             not self.static_drawdown_data and not self.static_alpha_data and not self.static_beta_data and
-            not self.static_information_ratio_data):
+            not self.static_information_ratio_data and not self.static_treynor_ratio_data and
+            not self.static_calmar_ratio_data and not self.static_ulcer_index_data):
             return
         
-        scheme_name = 'Unknown'
-        if self.rolling_data and 'scheme_name' in self.rolling_data:
-            scheme_name = self.rolling_data['scheme_name']
-        elif self.calendar_data and 'scheme_name' in self.calendar_data:
-            scheme_name = self.calendar_data['scheme_name']
-        elif self.static_std_dev_data and 'scheme_name' in self.static_std_dev_data:
-            scheme_name = self.static_std_dev_data['scheme_name']
-        elif self.static_downside_dev_data and 'scheme_name' in self.static_downside_dev_data:
-            scheme_name = self.static_downside_dev_data['scheme_name']
-        elif self.rolling_std_dev_data and 'scheme_name' in self.rolling_std_dev_data:
-            scheme_name = self.rolling_std_dev_data['scheme_name']
-        elif self.static_sharpe_data and 'scheme_name' in self.static_sharpe_data:
-            scheme_name = self.static_sharpe_data['scheme_name']
-        elif self.rolling_sharpe_data and 'scheme_name' in self.rolling_sharpe_data:
-            scheme_name = self.rolling_sharpe_data['scheme_name']
-        elif self.static_sortino_data and 'scheme_name' in self.static_sortino_data:
-            scheme_name = self.static_sortino_data['scheme_name']
-        elif self.rolling_sortino_data and 'scheme_name' in self.rolling_sortino_data:
-            scheme_name = self.rolling_sortino_data['scheme_name']
+        # Get scheme name from scheme_data (guaranteed to exist if we reach here)
+        scheme_name = self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown'
         
         print(f"\n{scheme_name}")
         print("=" * 60)
@@ -288,6 +278,45 @@ class MutualFundAnalyzer:
                         print(f"{year} Year(s): {ir_value['error']}")
                     else:
                         print(f"{year} Year(s): {ir_value}")
+
+        # Print Static Treynor Ratio
+        if self.static_treynor_ratio_data:
+            print("\nStatic Treynor Ratio:")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_TREYNOR_RATIO_YEARS:
+                if year in self.static_treynor_ratio_data['static_treynor_ratios']:
+                    treynor_value = self.static_treynor_ratio_data['static_treynor_ratios'][year]
+                    if isinstance(treynor_value, dict) and 'error' in treynor_value:
+                        print(f"{year} Year(s): {treynor_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {treynor_value}")
+
+        # Print Static Calmar Ratio
+        if self.static_calmar_ratio_data:
+            print("\nStatic Calmar Ratio:")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_CALMAR_RATIO_YEARS:
+                if year in self.static_calmar_ratio_data['static_calmar_ratios']:
+                    calmar_value = self.static_calmar_ratio_data['static_calmar_ratios'][year]
+                    if isinstance(calmar_value, dict) and 'error' in calmar_value:
+                        print(f"{year} Year(s): {calmar_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {calmar_value}")
+
+        # Print Static Ulcer Index
+        if self.static_ulcer_index_data:
+            print("\nStatic Ulcer Index:")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_ULCER_INDEX_YEARS:
+                if year in self.static_ulcer_index_data['static_ulcer_indices']:
+                    ulcer_value = self.static_ulcer_index_data['static_ulcer_indices'][year]
+                    if isinstance(ulcer_value, dict) and 'error' in ulcer_value:
+                        print(f"{year} Year(s): {ulcer_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {ulcer_value}")
         
         print("=" * 60)
     
@@ -314,12 +343,15 @@ class MutualFundAnalyzer:
         self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
         self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
         self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
+        self.static_calmar_ratio_data = StaticCalmarRatioCalculator.calculate(self.scheme_data)
+        self.static_ulcer_index_data = StaticUlcerIndexCalculator.calculate(self.scheme_data)
 
         # Calculate Static Alpha, Beta, and Information Ratio if benchmark data is available
         if self.benchmark_data:
             self.static_alpha_data = StaticAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_information_ratio_data = StaticInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.static_treynor_ratio_data = StaticTreynorRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
 
         # Display all metrics
         self._display_metrics()

@@ -19,6 +19,9 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Static Alpha**: Calculates Jensen's Alpha (Excess Return over CAPM Expected Return) for 1, 3, and 5 years
 - **Static Beta**: Calculates Beta (Volatility relative to benchmark) for 1, 3, and 5 years
 - **Static Information Ratio**: Calculates Information Ratio (Active Return / Tracking Error) for 1, 3, and 5 years
+- **Static Treynor Ratio**: Calculates Treynor Ratio (Excess Return / Beta) for 1, 3, and 5 years
+- **Static Calmar Ratio**: Calculates Calmar Ratio (Annualized Return / Max Drawdown) for 3 and 5 years
+- **Static Ulcer Index**: Calculates Ulcer Index (Measure of downside risk) for 1, 3, and 5 years
 
 ## Project Structure
 
@@ -39,6 +42,9 @@ The project is modularized into the following components:
 - **`static_alpha_calculator.py`**: Calculates Jensen's Alpha.
 - **`static_beta_calculator.py`**: Calculates Beta.
 - **`static_information_ratio_calculator.py`**: Calculates static Information Ratio.
+- **`static_treynor_ratio_calculator.py`**: Calculates static Treynor Ratio.
+- **`static_calmar_ratio_calculator.py`**: Calculates static Calmar Ratio.
+- **`static_ulcer_index_calculator.py`**: Calculates static Ulcer Index.
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
 - **`constants.py`**: Defines configuration constants (e.g., trading days, risk-free rate, date formats).
 
@@ -212,3 +218,6 @@ Period          Max Drawdown         Recovery Time (Days)
 11. **Static Alpha**: Jensen's Alpha measures the excess return of the fund over its expected return (predicted by CAPM). A positive alpha indicates the fund has outperformed its benchmark after adjusting for risk.
 12. **Static Beta**: A measure of the volatility (or systematic risk) of the fund in comparison to the market/benchmark. Beta = 1 indicates volatility matches the market.
 13. **Static Information Ratio**: A measure of the risk-adjusted return of the fund relative to a benchmark. Calculated as (Active Return / Tracking Error). Higher is better.
+14. **Static Treynor Ratio**: A risk-adjusted performance measure that uses Beta as the risk measure. Calculated as (Fund Return - Risk Free Rate) / Beta.
+15. **Static Calmar Ratio**: A comparison of the annualized return to the maximum drawdown. Calculated as (Annualized Return / Max Drawdown). Higher is better.
+16. **Static Ulcer Index**: A measure of the depth and duration of drawdowns. Higher value indicates greater risk of loss. Unlike standard deviation, it only penalizes downside risk.

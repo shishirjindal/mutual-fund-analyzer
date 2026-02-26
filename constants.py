@@ -60,6 +60,15 @@ class Constants:
     # Static Information Ratio configuration
     STATIC_INFORMATION_RATIO_YEARS = [1, 3, 5]
 
+    # Static Treynor Ratio configuration
+    STATIC_TREYNOR_RATIO_YEARS = [1, 3, 5]
+
+    # Static Calmar Ratio configuration
+    STATIC_CALMAR_RATIO_YEARS = [3, 5]
+
+    # Static Ulcer Index configuration
+    STATIC_ULCER_INDEX_YEARS = [1, 3, 5]
+
     # Rolling Sharpe ratio configuration
     ROLLING_SHARPE_RATIO_MAP = [
         {
