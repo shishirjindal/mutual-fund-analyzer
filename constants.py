@@ -69,6 +69,9 @@ class Constants:
     # Static Ulcer Index configuration
     STATIC_ULCER_INDEX_YEARS = [1, 3, 5]
 
+    # Static Hit Ratio configuration
+    STATIC_HIT_RATIO_YEARS = [1, 3, 5]
+
     # Rolling Sharpe ratio configuration
     ROLLING_SHARPE_RATIO_MAP = [
         {
@@ -119,6 +122,18 @@ class Constants:
 
     # Rolling Information Ratio configuration
     ROLLING_INFORMATION_RATIO_MAP = [
+        {
+            'rolling_window': 1,
+            'total_data': 5,
+        },
+        {
+            'rolling_window': 3,
+            'total_data': 10,
+        },
+    ]
+
+    # Rolling Hit Ratio configuration
+    ROLLING_HIT_RATIO_MAP = [
         {
             'rolling_window': 1,
             'total_data': 5,

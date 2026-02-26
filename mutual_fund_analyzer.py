@@ -35,6 +35,8 @@ from static_ulcer_index_calculator import StaticUlcerIndexCalculator
 from rolling_alpha_calculator import RollingAlphaCalculator
 from rolling_beta_calculator import RollingBetaCalculator
 from rolling_information_ratio_calculator import RollingInformationRatioCalculator
+from static_hit_ratio_calculator import StaticHitRatioCalculator
+from rolling_hit_ratio_calculator import RollingHitRatioCalculator
 
 
 class MutualFundAnalyzer:
@@ -77,6 +79,8 @@ class MutualFundAnalyzer:
         self.rolling_alpha_data: Dict[str, Any] = {}
         self.rolling_beta_data: Dict[str, Any] = {}
         self.rolling_information_ratio_data: Dict[str, Any] = {}
+        self.static_hit_ratio_data: Dict[str, Any] = {}
+        self.rolling_hit_ratio_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -95,7 +99,8 @@ class MutualFundAnalyzer:
             not self.static_information_ratio_data and not self.static_treynor_ratio_data and
             not self.static_calmar_ratio_data and not self.static_ulcer_index_data and
             not self.rolling_alpha_data and not self.rolling_beta_data and
-            not self.rolling_information_ratio_data):
+            not self.rolling_information_ratio_data and
+            not self.static_hit_ratio_data and not self.rolling_hit_ratio_data):
             return
         
         # Get scheme name from scheme_data (guaranteed to exist if we reach here)
@@ -172,6 +177,36 @@ class MutualFundAnalyzer:
                     print(f"{window:<10} {total_data:<10} Error: {item['error']}")
                 else:
                     print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
+
+        # Print Static Hit Ratio
+        if self.static_hit_ratio_data:
+            print("\nStatic Hit Ratio (Outperformance %):")
+            print("-" * 60)
+            
+            for year in Constants.STATIC_HIT_RATIO_YEARS:
+                if year in self.static_hit_ratio_data['static_hit_ratios']:
+                    hit_value = self.static_hit_ratio_data['static_hit_ratios'][year]
+                    if isinstance(hit_value, dict) and 'error' in hit_value:
+                        print(f"{year} Year(s): {hit_value['error']}")
+                    else:
+                        print(f"{year} Year(s): {hit_value}%")
+
+        # Print Rolling Hit Ratio
+        if self.rolling_hit_ratio_data:
+            print("\nRolling Hit Ratio (Outperformance %):")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
+            print("-" * 80)
+            
+            for item in self.rolling_hit_ratio_data['rolling_hit_ratios']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10}% {item['mean']:<10}% {item['min']:<10}% {item['max']:<10}% {item['latest']:<10}%")
 
         # Print Sharpe Ratio
         if self.static_sharpe_data:
@@ -414,6 +449,8 @@ class MutualFundAnalyzer:
             self.rolling_alpha_data = RollingAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.rolling_beta_data = RollingBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.rolling_information_ratio_data = RollingInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.static_hit_ratio_data = StaticHitRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.rolling_hit_ratio_data = RollingHitRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
 
         # Display all metrics
         self._display_metrics()
