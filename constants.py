@@ -92,6 +92,42 @@ class Constants:
             'total_data': 10,
         },
     ]
+
+    # Rolling Alpha configuration
+    ROLLING_ALPHA_MAP = [
+        {
+            'rolling_window': 1,
+            'total_data': 5,
+        },
+        {
+            'rolling_window': 3,
+            'total_data': 10,
+        },
+    ]
+
+    # Rolling Beta configuration
+    ROLLING_BETA_MAP = [
+        {
+            'rolling_window': 1,
+            'total_data': 5,
+        },
+        {
+            'rolling_window': 3,
+            'total_data': 10,
+        },
+    ]
+
+    # Rolling Information Ratio configuration
+    ROLLING_INFORMATION_RATIO_MAP = [
+        {
+            'rolling_window': 1,
+            'total_data': 5,
+        },
+        {
+            'rolling_window': 3,
+            'total_data': 10,
+        },
+    ]
     
     # Date patterns for NAV lookup
     # Days to check for NAV at the start of a year (for both initial and final NAV)

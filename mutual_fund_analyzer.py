@@ -32,6 +32,9 @@ from static_information_ratio_calculator import StaticInformationRatioCalculator
 from static_treynor_ratio_calculator import StaticTreynorRatioCalculator
 from static_calmar_ratio_calculator import StaticCalmarRatioCalculator
 from static_ulcer_index_calculator import StaticUlcerIndexCalculator
+from rolling_alpha_calculator import RollingAlphaCalculator
+from rolling_beta_calculator import RollingBetaCalculator
+from rolling_information_ratio_calculator import RollingInformationRatioCalculator
 
 
 class MutualFundAnalyzer:
@@ -71,6 +74,9 @@ class MutualFundAnalyzer:
         self.static_treynor_ratio_data: Dict[str, Any] = {}
         self.static_calmar_ratio_data: Dict[str, Any] = {}
         self.static_ulcer_index_data: Dict[str, Any] = {}
+        self.rolling_alpha_data: Dict[str, Any] = {}
+        self.rolling_beta_data: Dict[str, Any] = {}
+        self.rolling_information_ratio_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -87,7 +93,9 @@ class MutualFundAnalyzer:
             not self.rolling_sharpe_data and not self.static_sortino_data and not self.rolling_sortino_data and
             not self.static_drawdown_data and not self.static_alpha_data and not self.static_beta_data and
             not self.static_information_ratio_data and not self.static_treynor_ratio_data and
-            not self.static_calmar_ratio_data and not self.static_ulcer_index_data):
+            not self.static_calmar_ratio_data and not self.static_ulcer_index_data and
+            not self.rolling_alpha_data and not self.rolling_beta_data and
+            not self.rolling_information_ratio_data):
             return
         
         # Get scheme name from scheme_data (guaranteed to exist if we reach here)
@@ -317,6 +325,57 @@ class MutualFundAnalyzer:
                         print(f"{year} Year(s): {ulcer_value['error']}")
                     else:
                         print(f"{year} Year(s): {ulcer_value}")
+
+        # Print Rolling Alpha
+        if self.rolling_alpha_data:
+            print("\nRolling Alpha (Jensen's Alpha %):")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
+            print("-" * 80)
+            
+            for item in self.rolling_alpha_data['rolling_alphas']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
+
+        # Print Rolling Beta
+        if self.rolling_beta_data:
+            print("\nRolling Beta:")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
+            print("-" * 80)
+            
+            for item in self.rolling_beta_data['rolling_betas']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
+
+        # Print Rolling Information Ratio
+        if self.rolling_information_ratio_data:
+            print("\nRolling Information Ratio:")
+            print("-" * 60)
+            
+            # Print column headers
+            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
+            print("-" * 80)
+            
+            for item in self.rolling_information_ratio_data['rolling_information_ratios']:
+                total_data = item['total_data']
+                window = item['rolling_window']
+                if 'error' in item:
+                    print(f"{window:<10} {total_data:<10} Error: {item['error']}")
+                else:
+                    print(f"{window:<10} {total_data:<10} {item['median']:<10} {item['mean']:<10} {item['min']:<10} {item['max']:<10} {item['latest']:<10}")
         
         print("=" * 60)
     
@@ -352,6 +411,9 @@ class MutualFundAnalyzer:
             self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_information_ratio_data = StaticInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
             self.static_treynor_ratio_data = StaticTreynorRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.rolling_alpha_data = RollingAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.rolling_beta_data = RollingBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
+            self.rolling_information_ratio_data = RollingInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
 
         # Display all metrics
         self._display_metrics()

@@ -19,6 +19,9 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Static Alpha**: Calculates Jensen's Alpha (Excess Return over CAPM Expected Return) for 1, 3, and 5 years
 - **Static Beta**: Calculates Beta (Volatility relative to benchmark) for 1, 3, and 5 years
 - **Static Information Ratio**: Calculates Information Ratio (Active Return / Tracking Error) for 1, 3, and 5 years
+- **Rolling Alpha**: Calculates rolling Jensen's Alpha metrics for configured windows
+- **Rolling Beta**: Calculates rolling Beta metrics for configured windows
+- **Rolling Information Ratio**: Calculates rolling Information Ratio metrics for configured windows
 - **Static Treynor Ratio**: Calculates Treynor Ratio (Excess Return / Beta) for 1, 3, and 5 years
 - **Static Calmar Ratio**: Calculates Calmar Ratio (Annualized Return / Max Drawdown) for 3 and 5 years
 - **Static Ulcer Index**: Calculates Ulcer Index (Measure of downside risk) for 1, 3, and 5 years
@@ -42,6 +45,9 @@ The project is modularized into the following components:
 - **`static_alpha_calculator.py`**: Calculates Jensen's Alpha.
 - **`static_beta_calculator.py`**: Calculates Beta.
 - **`static_information_ratio_calculator.py`**: Calculates static Information Ratio.
+- **`rolling_alpha_calculator.py`**: Calculates rolling Jensen's Alpha.
+- **`rolling_beta_calculator.py`**: Calculates rolling Beta.
+- **`rolling_information_ratio_calculator.py`**: Calculates rolling Information Ratio.
 - **`static_treynor_ratio_calculator.py`**: Calculates static Treynor Ratio.
 - **`static_calmar_ratio_calculator.py`**: Calculates static Calmar Ratio.
 - **`static_ulcer_index_calculator.py`**: Calculates static Ulcer Index.
@@ -221,3 +227,6 @@ Period          Max Drawdown         Recovery Time (Days)
 14. **Static Treynor Ratio**: A risk-adjusted performance measure that uses Beta as the risk measure. Calculated as (Fund Return - Risk Free Rate) / Beta.
 15. **Static Calmar Ratio**: A comparison of the annualized return to the maximum drawdown. Calculated as (Annualized Return / Max Drawdown). Higher is better.
 16. **Static Ulcer Index**: A measure of the depth and duration of drawdowns. Higher value indicates greater risk of loss. Unlike standard deviation, it only penalizes downside risk.
+17. **Rolling Alpha**: Distribution of Jensen's Alpha over moving windows.
+18. **Rolling Beta**: Distribution of Beta over moving windows.
+19. **Rolling Information Ratio**: Distribution of Information Ratio over moving windows.
