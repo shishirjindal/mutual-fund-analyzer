@@ -216,6 +216,34 @@ class MutualFundAnalyzer:
                     print(f"{w:<10} {d:<10} Error: {item['error']}")
                 else:
                     print(f"{w:<10} {d:<10} {item['median']}{unit:<9} {item['mean']}{unit:<9} {item['min']}{unit:<9} {item['max']}{unit:<9} {item['latest']}{unit:<9}")
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Return all calculated metrics as a dictionary for the UI or Decision Engine."""
+        return {
+            'scheme_name': self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown',
+            'rolling_data': self.rolling_data,
+            'calendar_data': self.calendar_data,
+            'static_std_dev_data': self.static_std_dev_data,
+            'static_downside_dev_data': self.static_downside_dev_data,
+            'rolling_std_dev_data': self.rolling_std_dev_data,
+            'static_sharpe_data': self.static_sharpe_data,
+            'rolling_sharpe_data': self.rolling_sharpe_data,
+            'static_sortino_data': self.static_sortino_data,
+            'rolling_sortino_data': self.rolling_sortino_data,
+            'static_drawdown_data': self.static_drawdown_data,
+            'rolling_drawdown_data': self.rolling_drawdown_data,
+            'static_alpha_data': self.static_alpha_data,
+            'static_beta_data': self.static_beta_data,
+            'static_information_ratio_data': self.static_information_ratio_data,
+            'static_treynor_ratio_data': self.static_treynor_ratio_data,
+            'static_calmar_ratio_data': self.static_calmar_ratio_data,
+            'static_ulcer_index_data': self.static_ulcer_index_data,
+            'rolling_alpha_data': self.rolling_alpha_data,
+            'rolling_beta_data': self.rolling_beta_data,
+            'rolling_information_ratio_data': self.rolling_information_ratio_data,
+            'static_hit_ratio_data': self.static_hit_ratio_data,
+            'rolling_hit_ratio_data': self.rolling_hit_ratio_data,
+        }
     
     def process_scheme(self) -> None:
         """

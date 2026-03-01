@@ -28,12 +28,14 @@ This project analyzes mutual fund schemes and calculates various parameters incl
 - **Static Treynor Ratio**: Calculates Treynor Ratio (Excess Return / Beta) for 1, 3, and 5 years
 - **Static Calmar Ratio**: Calculates Calmar Ratio (Annualized Return / Max Drawdown) for 3 and 5 years
 - **Static Ulcer Index**: Calculates Ulcer Index (Measure of downside risk) for 1, 3, and 5 years
+- **Interactive Web UI**: Streamlit-based interface for visual analysis and charts
 
 ## Project Structure
 
 The project is modularized into the following components:
 
-- **`mutual_fund_analyzer.py`**: The main entry point script that coordinates data fetching and analysis.
+- **`mfa.py`**: The main entry point script that coordinates data fetching and analysis.
+- **`app.py`**: Streamlit-based web interface for interactive visualization.
 - **`data_fetcher.py`**: Handles fetching historical NAV data using `mftool`.
 - **`rolling_returns_calculator.py`**: Calculates rolling CAGR returns.
 - **`calendar_year_returns_calculator.py`**: Calculates calendar year returns.
@@ -60,182 +62,63 @@ The project is modularized into the following components:
 - **`utils.py`**: Contains utility functions for financial calculations (e.g., CAGR, daily returns).
 - **`constants.py`**: Defines configuration constants (e.g., trading days, risk-free rate, date formats).
 
-## Technical Implementation Details
-
-- **Type Safety**: The codebase is fully type-hinted using Python's `typing` module for better code quality and developer experience.
-- **Vectorized Calculations**: Uses `pandas` and `numpy` for efficient, vectorized financial calculations instead of slow loops.
-- **Robustness**: Includes comprehensive error handling for:
-  - Missing or insufficient data points
-  - Zero or invalid NAV values
-  - Infinite returns or division-by-zero scenarios
-- **Standardization**: Centralized logic for daily returns and data processing in `utils.py` ensures consistency across all metrics.
-
 ## Requirements
 
-- Python 3.10 or higher (Python 3.14.2 recommended)
-- **Note:** This script uses Homebrew Python 3.14.2 (`/opt/homebrew/bin/python3`), not the system Python 3.9.6
-- Required packages (see `requirements.txt`)
-
-## Setup
-
-**Important:** Ensure you're using Homebrew Python 3.14.2, not system Python 3.9.6:
-```bash
-which python3  # Should show /opt/homebrew/bin/python3
-python3 --version  # Should show Python 3.14.2
-```
-
-If `python3` points to system Python 3.9.6, use the full path:
-```bash
-/opt/homebrew/bin/python3 mutual_fund_analyzer.py <scheme_codes>
-```
-
-Install dependencies using one of the following methods:
-
-### Option 1: System-wide installation (requires --break-system-packages flag)
-```bash
-/opt/homebrew/bin/python3 -m pip install --break-system-packages -r requirements.txt
-```
-
-### Option 2: User installation (recommended)
-```bash
-/opt/homebrew/bin/python3 -m pip install --user -r requirements.txt
-```
-
-### Option 3: Verify installation
-```bash
-/opt/homebrew/bin/python3 -c "from mftool import Mftool; print('Installation successful!')"
-```
+- Python 3.10 or higher
+- Required packages: `streamlit`, `plotly`, `pandas`, `mftool`, `numpy`, `httpx`, `beautifulsoup4`, `yfinance`, `matplotlib`
 
 ## Usage
 
-Run the script directly (using Homebrew Python 3.14.2):
-```bash
-python3 mutual_fund_analyzer.py <scheme_codes>
-```
+### Command Line Interface (CLI)
 
-Or make it executable and run directly:
-```bash
-chmod +x mutual_fund_analyzer.py
-./mutual_fund_analyzer.py <scheme_codes>
-```
+1. **Calculate returns for a single scheme code:**
+   ```bash
+   python3 mfa.py 112277
+   ```
 
-**Note:** If `python3` points to system Python 3.9.6, use the full path:
-```bash
-/opt/homebrew/bin/python3 mutual_fund_analyzer.py <scheme_codes>
-```
+2. **Calculate returns for multiple scheme codes (comma-separated):**
+   ```bash
+   python3 mfa.py 112277,120465
+   ```
 
-### Syntax
+### Streamlit Web UI
 
-```bash
-python3 mutual_fund_analyzer.py <scheme_codes>
-```
+You can also use the web-based UI for interactive analysis and visualizations:
 
-**Parameters:**
-- `scheme_codes`: Comma-separated list of mutual fund scheme codes
+1. **Install dependencies:**
+   ```bash
+   pip3 install streamlit plotly pandas mftool --break-system-packages
+   ```
 
-**Example:**
-```bash
-python3 mutual_fund_analyzer.py 101206,101207
-```
+2. **Run the Streamlit app:**
+   ```bash
+   streamlit run app.py
+   ```
 
-### Output
+3. **Open the app in your browser:**
+   The URL (typically `http://localhost:8501`) will be displayed in the terminal.
 
-The script prints a detailed analysis for each scheme code provided:
+## Metric Explanations
 
-```text
-Axis Large Cap Fund - Regular Plan - Growth
-============================================================
-
-Rolling Returns (Min / Average / Max CAGR):
-------------------------------------------------------------
-1 Year(s): -23.51% / 13.34% / 63.12%
-3 Year(s): 1.21% / 13.66% / 30.59%
-5 Year(s): 3.45% / 13.99% / 21.05%
-
-Calendar Year Returns:
-------------------------------------------------------------
-2025: 6.23%
-2024: 14.29%
-2023: 17.04%
-2022: -6.89%
-2021: 22.36%
-
-Static Standard Deviation (Annualized Volatility %):
-------------------------------------------------------------
-1 Year(s): 10.88%
-3 Year(s): 11.18%
-5 Year(s): 13.17%
-
-Static Downside Deviation (Annualized Downside Volatility %):
-------------------------------------------------------------
-1 Year(s): 7.22%
-3 Year(s): 7.73%
-5 Year(s): 9.29%
-
-Rolling Standard Deviation (Volatility %):
-------------------------------------------------------------
-Window     Data       Median     Mean       Min        Max        Latest    
---------------------------------------------------------------------------------
-1          5          12.69      12.88      8.74       17.44      10.92     
-3          10         14.46      15.22      11.1       19.72      11.17     
-
-Sharpe Ratio:
-------------------------------------------------------------
-1 Year(s): 0.2
-3 Year(s): 0.57
-5 Year(s): 0.35
-
-Rolling Sharpe Ratio:
-------------------------------------------------------------
-Window     Data       Median     Mean       10%ile     Latest     % > 0   
---------------------------------------------------------------------------------
-1          5          0.06       0.31       -0.71      0.14       53.41   
-3          10         0.49       0.5        0.21       0.49       99.71   
-
-Sortino Ratio:
-------------------------------------------------------------
-1 Year(s): 0.3
-3 Year(s): 0.83
-5 Year(s): 0.5
-
-Rolling Sortino Ratio:
-------------------------------------------------------------
-Window     Data       Median     Mean       10%ile     Latest     % > 0   
---------------------------------------------------------------------------------
-1          5          0.09       0.47       -0.94      0.22       53.41   
-3          10         0.69       0.71       0.28       0.71       99.71   
-
-Max Drawdown & Recovery Time:
-------------------------------------------------------------
-Period          Max Drawdown         Recovery Time (Days)
-------------------------------------------------------------
-1 Year(s)       -7.08%               82                  
-3 Year(s)       -15.82%              489                 
-5 Year(s)       -22.22%              782                 
-============================================================
-```
-
-### Metrics Explained
-
-1. **Rolling Returns**: Compound Annual Growth Rate (CAGR) over moving windows (1, 3, 5 years).
-2. **Calendar Year Returns**: Absolute returns for specific calendar years (Jan 1st to Jan 1st).
-3. **Static Standard Deviation**: Annualized volatility calculated from daily returns over fixed periods.
-4. **Static Downside Deviation**: Annualized downside volatility (considering only negative returns) calculated from daily returns over fixed periods.
-5. **Rolling Standard Deviation**: Distribution of annualized volatility over moving windows.
+1. **Rolling Returns**: CAGR over moving windows (1, 3, 5 years). Provides a more comprehensive view than point-to-point returns.
+2. **Calendar Year Returns**: Absolute returns for specific calendar years.
+3. **Static Standard Deviation**: Annualized volatility calculated over fixed periods.
+4. **Static Downside Deviation**: Annualized downside volatility (considering only negative returns).
+5. **Rolling Standard Deviation**: Distribution of volatility over moving windows.
 6. **Static Sharpe Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Volatility).
 7. **Rolling Sharpe Ratio**: Distribution of Sharpe Ratio over moving windows.
-8. **Static Sortino Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Downside Deviation). Penalizes only negative volatility.
+8. **Static Sortino Ratio**: Risk-adjusted return metric ((Return - Risk Free Rate) / Downside Deviation).
 9. **Rolling Sortino Ratio**: Distribution of Sortino Ratio over moving windows.
-10. **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained. Also includes Recovery Time (days to reach a new high).
-11. **Static Alpha**: Jensen's Alpha measures the excess return of the fund over its expected return (predicted by CAPM). A positive alpha indicates the fund has outperformed its benchmark after adjusting for risk.
-12. **Static Beta**: A measure of the volatility (or systematic risk) of the fund in comparison to the market/benchmark. Beta = 1 indicates volatility matches the market.
-13. **Static Information Ratio**: A measure of the risk-adjusted return of the fund relative to a benchmark. Calculated as (Active Return / Tracking Error). Higher is better.
-14. **Static Treynor Ratio**: A risk-adjusted performance measure that uses Beta as the risk measure. Calculated as (Fund Return - Risk Free Rate) / Beta.
-15. **Static Calmar Ratio**: A comparison of the annualized return to the maximum drawdown. Calculated as (Annualized Return / Max Drawdown). Higher is better.
-16. **Static Ulcer Index**: A measure of the depth and duration of drawdowns. Higher value indicates greater risk of loss. Unlike standard deviation, it only penalizes downside risk.
-17. **Rolling Alpha**: Distribution of Jensen's Alpha over moving windows.
+10. **Max Drawdown**: Maximum loss from peak to trough and recovery time.
+11. **Static Alpha**: Jensen's Alpha measures excess return over CAPM expected return.
+12. **Static Beta**: Volatility relative to the benchmark.
+13. **Static Information Ratio**: Risk-adjusted return relative to benchmark.
+14. **Static Treynor Ratio**: Risk-adjusted performance using Beta as the risk measure.
+15. **Static Calmar Ratio**: Annualized return divided by maximum drawdown.
+16. **Static Ulcer Index**: Measure of downside risk considering depth and duration of drawdowns.
+17. **Rolling Alpha**: Distribution of Alpha over moving windows.
 18. **Rolling Beta**: Distribution of Beta over moving windows.
 19. **Rolling Information Ratio**: Distribution of Information Ratio over moving windows.
-20. **Static Hit Ratio**: The percentage of days the fund's return was higher than the benchmark's return over fixed periods.
-21. **Rolling Hit Ratio**: Distribution of the Hit Ratio over moving windows.
-22. **Rolling Max Drawdown**: Distribution of the Maximum Drawdown over moving windows.
+20. **Static Hit Ratio**: Percentage of days the fund outperformed the benchmark.
+21. **Rolling Hit Ratio**: Distribution of Hit Ratio over moving windows.
+22. **Rolling Max Drawdown**: Distribution of Maximum Drawdown over moving windows.
