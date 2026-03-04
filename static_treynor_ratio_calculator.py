@@ -18,9 +18,8 @@ class StaticTreynorRatioCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with static_treynor_ratios data.
+            Dictionary containing static Treynor Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_treynor_ratios = {}
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -28,7 +27,7 @@ class StaticTreynorRatioCalculator:
         if combined_df is None:
              for year in Constants.STATIC_TREYNOR_RATIO_YEARS:
                  static_treynor_ratios[year] = {'error': 'Data alignment failed or no overlapping data'}
-             return {'scheme_name': scheme_name, 'static_treynor_ratios': static_treynor_ratios}
+             return static_treynor_ratios
 
         end_date = combined_df.index[-1]
 
@@ -82,4 +81,4 @@ class StaticTreynorRatioCalculator:
                     'error': f'Error calculating Treynor Ratio: {str(e)}'
                 }
                 
-        return {'scheme_name': scheme_name, 'static_treynor_ratios': static_treynor_ratios}
+        return static_treynor_ratios

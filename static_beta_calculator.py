@@ -18,9 +18,8 @@ class StaticBetaCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with static_betas data.
+            Dictionary containing static Beta data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_betas = {}
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -28,7 +27,7 @@ class StaticBetaCalculator:
         if combined_df is None:
              for year in Constants.STATIC_BETA_YEARS:
                  static_betas[year] = {'error': 'Data alignment failed or no overlapping data'}
-             return {'scheme_name': scheme_name, 'static_betas': static_betas}
+             return static_betas
 
         # Update end_date to be the latest common date
         end_date = combined_df.index[-1]
@@ -74,4 +73,4 @@ class StaticBetaCalculator:
                     'error': f'Error calculating Beta: {str(e)}'
                 }
                 
-        return {'scheme_name': scheme_name, 'static_betas': static_betas}
+        return static_betas

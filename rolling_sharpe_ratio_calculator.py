@@ -16,9 +16,8 @@ class RollingSharpeRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_sharpe_ratios data.
+            List of dictionaries containing rolling Sharpe Ratio stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         rolling_sharpe_ratios = []
@@ -30,7 +29,7 @@ class RollingSharpeRatioCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'No data available'
                 })
-            return {'scheme_name': scheme_name, 'rolling_sharpe_ratios': rolling_sharpe_ratios}
+            return rolling_sharpe_ratios
         
         for config in Constants.ROLLING_SHARPE_RATIO_MAP:
             total_years = config['total_data']
@@ -101,7 +100,4 @@ class RollingSharpeRatioCalculator:
                     'latest': round(valid_sharpes.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_sharpe_ratios': rolling_sharpe_ratios
-        }
+        return rolling_sharpe_ratios

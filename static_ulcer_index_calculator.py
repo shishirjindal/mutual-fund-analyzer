@@ -19,9 +19,8 @@ class StaticUlcerIndexCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and static_ulcer_indices data.
+            Dictionary containing static Ulcer Index data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         static_ulcer_indices = {}
@@ -29,7 +28,7 @@ class StaticUlcerIndexCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_ULCER_INDEX_YEARS:
                 static_ulcer_indices[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'static_ulcer_indices': static_ulcer_indices}
+            return static_ulcer_indices
         end_date = df.index[-1]
         
         for year in Constants.STATIC_ULCER_INDEX_YEARS:
@@ -62,7 +61,4 @@ class StaticUlcerIndexCalculator:
             except Exception as e:
                 static_ulcer_indices[year] = {'error': f'Error calculating Ulcer Index: {str(e)}'}
         
-        return {
-            'scheme_name': scheme_name,
-            'static_ulcer_indices': static_ulcer_indices
-        }
+        return static_ulcer_indices

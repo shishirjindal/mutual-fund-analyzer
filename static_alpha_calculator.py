@@ -18,9 +18,8 @@ class StaticAlphaCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with static_alphas data.
+            Dictionary containing static Alpha data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_alphas = {}
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -28,7 +27,7 @@ class StaticAlphaCalculator:
         if combined_df is None:
              for year in Constants.STATIC_ALPHA_YEARS:
                  static_alphas[year] = {'error': 'Data alignment failed or no overlapping data'}
-             return {'scheme_name': scheme_name, 'static_alphas': static_alphas}
+             return static_alphas
 
         end_date = combined_df.index[-1]
 
@@ -88,7 +87,4 @@ class StaticAlphaCalculator:
                     'error': f'Error calculating Alpha: {str(e)}'
                 }
                 
-        return {
-            'scheme_name': scheme_name,
-            'static_alphas': static_alphas
-        }
+        return static_alphas

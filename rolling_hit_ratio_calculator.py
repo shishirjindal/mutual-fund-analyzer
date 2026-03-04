@@ -16,9 +16,8 @@ class RollingHitRatioCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with scheme_name and rolling_hit_ratios data.
+            List of dictionaries containing rolling Hit Ratio stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         rolling_hit_ratios = []
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -30,7 +29,7 @@ class RollingHitRatioCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'Data alignment failed or no overlapping data'
                 })
-            return {'scheme_name': scheme_name, 'rolling_hit_ratios': rolling_hit_ratios}
+            return rolling_hit_ratios
             
         for config in Constants.ROLLING_HIT_RATIO_MAP:
             total_years = config['total_data']
@@ -89,7 +88,4 @@ class RollingHitRatioCalculator:
                     'latest': round(valid_ratios.iloc[-1], Constants.DECIMAL_PLACES)
                 })
                 
-        return {
-            'scheme_name': scheme_name,
-            'rolling_hit_ratios': rolling_hit_ratios
-        }
+        return rolling_hit_ratios

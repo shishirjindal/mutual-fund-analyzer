@@ -16,9 +16,8 @@ class StaticSortinoRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and static_sortino_ratios data.
+            Dictionary containing static Sortino Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         static_sortino_ratios = {}
@@ -26,7 +25,7 @@ class StaticSortinoRatioCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_SORTINO_RATIO_YEARS:
                 static_sortino_ratios[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'static_sortino_ratios': static_sortino_ratios}
+            return static_sortino_ratios
         end_date = df.index[-1]
         
         for year in Constants.STATIC_SORTINO_RATIO_YEARS:
@@ -82,7 +81,4 @@ class StaticSortinoRatioCalculator:
                     'error': f'Error calculating Sortino Ratio: {str(e)}'
                 }
         
-        return {
-            'scheme_name': scheme_name,
-            'static_sortino_ratios': static_sortino_ratios
-        }
+        return static_sortino_ratios

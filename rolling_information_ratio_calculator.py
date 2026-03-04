@@ -17,9 +17,8 @@ class RollingInformationRatioCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with scheme_name and rolling_information_ratios data.
+            List of dictionaries containing rolling Information Ratio stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         rolling_information_ratios = []
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -31,7 +30,7 @@ class RollingInformationRatioCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'Data alignment failed or no overlapping data'
                 })
-            return {'scheme_name': scheme_name, 'rolling_information_ratios': rolling_information_ratios}
+            return rolling_information_ratios
         
         for config in Constants.ROLLING_INFORMATION_RATIO_MAP:
             total_years = config['total_data']
@@ -99,7 +98,4 @@ class RollingInformationRatioCalculator:
                     'latest': round(valid_ir.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_information_ratios': rolling_information_ratios
-        }
+        return rolling_information_ratios

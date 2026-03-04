@@ -17,9 +17,8 @@ class RollingAlphaCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with scheme_name and rolling_alphas data.
+            List of dictionaries containing rolling Alpha stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         rolling_alphas = []
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -31,7 +30,7 @@ class RollingAlphaCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'Data alignment failed or no overlapping data'
                 })
-            return {'scheme_name': scheme_name, 'rolling_alphas': rolling_alphas}
+            return rolling_alphas
         
         for config in Constants.ROLLING_ALPHA_MAP:
             total_years = config['total_data']
@@ -109,7 +108,4 @@ class RollingAlphaCalculator:
                     'latest': round(valid_alphas.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_alphas': rolling_alphas
-        }
+        return rolling_alphas

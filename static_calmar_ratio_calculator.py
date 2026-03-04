@@ -17,9 +17,8 @@ class StaticCalmarRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and static_calmar_ratios data.
+            Dictionary containing static Calmar Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         static_calmar_ratios = {}
@@ -27,7 +26,7 @@ class StaticCalmarRatioCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_CALMAR_RATIO_YEARS:
                 static_calmar_ratios[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'static_calmar_ratios': static_calmar_ratios}
+            return static_calmar_ratios
         end_date = df.index[-1]
         
         for year in Constants.STATIC_CALMAR_RATIO_YEARS:
@@ -64,7 +63,4 @@ class StaticCalmarRatioCalculator:
             except Exception as e:
                 static_calmar_ratios[year] = {'error': f'Error calculating Calmar Ratio: {str(e)}'}
         
-        return {
-            'scheme_name': scheme_name,
-            'static_calmar_ratios': static_calmar_ratios
-        }
+        return static_calmar_ratios

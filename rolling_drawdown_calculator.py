@@ -15,9 +15,8 @@ class RollingDrawdownCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_drawdowns data.
+            List of dictionaries containing rolling Max Drawdown stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         rolling_drawdowns = []
@@ -29,7 +28,7 @@ class RollingDrawdownCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'No data available'
                 })
-            return {'scheme_name': scheme_name, 'rolling_drawdowns': rolling_drawdowns}
+            return rolling_drawdowns
             
         for config in Constants.ROLLING_DRAWDOWN_MAP:
             total_years = config['total_data']
@@ -100,7 +99,4 @@ class RollingDrawdownCalculator:
                     'error': f'Error calculating Rolling Drawdown: {str(e)}'
                 })
                 
-        return {
-            'scheme_name': scheme_name,
-            'rolling_drawdowns': rolling_drawdowns
-        }
+        return rolling_drawdowns

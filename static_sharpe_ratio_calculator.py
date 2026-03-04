@@ -16,9 +16,8 @@ class StaticSharpeRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and static_sharpe_ratios data.
+            Dictionary containing static Sharpe Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         static_sharpe_ratios = {}
@@ -26,7 +25,7 @@ class StaticSharpeRatioCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_SHARPE_RATIO_YEARS:
                 static_sharpe_ratios[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'static_sharpe_ratios': static_sharpe_ratios}
+            return static_sharpe_ratios
         end_date = df.index[-1]
         
         for year in Constants.STATIC_SHARPE_RATIO_YEARS:
@@ -83,7 +82,4 @@ class StaticSharpeRatioCalculator:
                     'error': f'Error calculating Sharpe Ratio: {str(e)}'
                 }
         
-        return {
-            'scheme_name': scheme_name,
-            'static_sharpe_ratios': static_sharpe_ratios
-        }
+        return static_sharpe_ratios

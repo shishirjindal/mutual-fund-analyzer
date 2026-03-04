@@ -17,9 +17,8 @@ class RollingSortinoRatioCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_sortino_ratios data.
+            List of dictionaries containing rolling Sortino Ratio stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         rolling_sortino_ratios = []
@@ -31,7 +30,7 @@ class RollingSortinoRatioCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'No data available'
                 })
-            return {'scheme_name': scheme_name, 'rolling_sortino_ratios': rolling_sortino_ratios}
+            return rolling_sortino_ratios
         
         for config in Constants.ROLLING_SORTINO_RATIO_MAP:
             total_years = config['total_data']
@@ -110,7 +109,4 @@ class RollingSortinoRatioCalculator:
                     'latest': round(valid_sortinos.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_sortino_ratios': rolling_sortino_ratios
-        }
+        return rolling_sortino_ratios

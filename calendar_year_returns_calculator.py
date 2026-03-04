@@ -16,9 +16,8 @@ class CalendarYearReturnsCalculator:
             years_to_calculate: List of years to calculate returns for
             
         Returns:
-            Dictionary with scheme_name and calendar_returns data.
+            Dictionary containing calendar year returns.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         calendar_returns = {}
@@ -26,7 +25,7 @@ class CalendarYearReturnsCalculator:
         if df is None or df.empty:
             for year in years_to_calculate:
                 calendar_returns[year] = None
-            return {'scheme_name': scheme_name, 'calendar_returns': calendar_returns}
+            return calendar_returns
         
         for year in years_to_calculate:
             try:
@@ -67,7 +66,4 @@ class CalendarYearReturnsCalculator:
             except Exception:
                 calendar_returns[year] = None
         
-        return {
-            'scheme_name': scheme_name,
-            'calendar_returns': calendar_returns
-        }
+        return calendar_returns

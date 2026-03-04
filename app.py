@@ -12,7 +12,7 @@ st.markdown("Analyze mutual fund performance using various risk and return metri
 
 # Sidebar for input
 st.sidebar.header("Input Parameters")
-scheme_code = st.sidebar.text_input("Enter Scheme Code", value="112277")
+scheme_code = st.sidebar.text_input("Enter Scheme Code", value="")
 analyze_button = st.sidebar.button("Analyze")
 
 if analyze_button or scheme_code:
@@ -35,7 +35,7 @@ if analyze_button or scheme_code:
                     
                     with col1:
                         st.subheader("Rolling Returns (CAGR %)")
-                        rolling_returns_data = metrics.get('rolling_data', {}).get('rolling_returns', {})
+                        rolling_returns_data = metrics.get('rolling_data', {})
                         if rolling_returns_data:
                             plot_data = []
                             for year, vals in rolling_returns_data.items():
@@ -60,7 +60,7 @@ if analyze_button or scheme_code:
                         
                     with col2:
                         st.subheader("Calendar Year Returns")
-                        calendar_returns = metrics.get('calendar_data', {}).get('calendar_returns', {})
+                        calendar_returns = metrics.get('calendar_data', {})
                         if calendar_returns:
                             plot_data = sorted([(year, val) for year, val in calendar_returns.items() if val is not None])
                             if plot_data:
@@ -77,7 +77,7 @@ if analyze_button or scheme_code:
                     with col1:
                         # Sharpe Ratio
                         st.subheader("Sharpe Ratio")
-                        sharpe_static = metrics.get('static_sharpe_data', {}).get('static_sharpe_ratios', {})
+                        sharpe_static = metrics.get('static_sharpe_data', {})
                         if sharpe_static:
                             plot_data = [{'Years': f"{y}Y", 'Ratio': v} for y, v in sharpe_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -88,7 +88,7 @@ if analyze_button or scheme_code:
 
                         # Volatility (Standard Deviation)
                         st.subheader("Standard Deviation (Volatility %)")
-                        std_static = metrics.get('static_std_dev_data', {}).get('std_devs', {})
+                        std_static = metrics.get('static_std_dev_data', {})
                         if std_static:
                             plot_data = [{'Years': f"{y}Y", 'Volatility (%)': v} for y, v in std_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -100,7 +100,7 @@ if analyze_button or scheme_code:
                     with col2:
                         # Sortino Ratio
                         st.subheader("Sortino Ratio")
-                        sortino_static = metrics.get('static_sortino_data', {}).get('static_sortino_ratios', {})
+                        sortino_static = metrics.get('static_sortino_data', {})
                         if sortino_static:
                             plot_data = [{'Years': f"{y}Y", 'Ratio': v} for y, v in sortino_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -111,7 +111,7 @@ if analyze_button or scheme_code:
 
                         # Downside Deviation
                         st.subheader("Downside Deviation (%)")
-                        downside_static = metrics.get('static_downside_dev_data', {}).get('downside_devs', {})
+                        downside_static = metrics.get('static_downside_dev_data', {})
                         if downside_static:
                             plot_data = [{'Years': f"{y}Y", 'Downside Vol (%)': v} for y, v in downside_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -126,7 +126,7 @@ if analyze_button or scheme_code:
                     
                     with col1:
                         # Rolling Sharpe
-                        rolling_sharpe = metrics.get('rolling_sharpe_data', {}).get('rolling_sharpe_ratios', [])
+                        rolling_sharpe = metrics.get('rolling_sharpe_data', [])
                         if rolling_sharpe:
                             plot_data = [{'Window': f"{i['rolling_window']}Y", 'Median': i['median'], 'Latest': i['latest']} for i in rolling_sharpe if 'error' not in i]
                             if plot_data:
@@ -138,7 +138,7 @@ if analyze_button or scheme_code:
                                 st.plotly_chart(fig, width="stretch")
 
                         # Rolling Std Dev
-                        rolling_std = metrics.get('rolling_std_dev_data', {}).get('rolling_std_devs', [])
+                        rolling_std = metrics.get('rolling_std_dev_data', [])
                         if rolling_std:
                             plot_data = [{'Window': f"{i['rolling_window']}Y", 'Median': i['median'], 'Latest': i['latest']} for i in rolling_std if 'error' not in i]
                             if plot_data:
@@ -151,7 +151,7 @@ if analyze_button or scheme_code:
 
                     with col2:
                         # Rolling Sortino
-                        rolling_sortino = metrics.get('rolling_sortino_data', {}).get('rolling_sortino_ratios', [])
+                        rolling_sortino = metrics.get('rolling_sortino_data', [])
                         if rolling_sortino:
                             plot_data = [{'Window': f"{i['rolling_window']}Y", 'Median': i['median'], 'Latest': i['latest']} for i in rolling_sortino if 'error' not in i]
                             if plot_data:
@@ -168,7 +168,7 @@ if analyze_button or scheme_code:
                     with col1:
                         # Static Max Drawdown
                         st.subheader("Static Max Drawdown (%)")
-                        dd_static = metrics.get('static_drawdown_data', {}).get('drawdowns', {})
+                        dd_static = metrics.get('static_drawdown_data', {})
                         if dd_static:
                             plot_data = [{'Years': f"{y}Y", 'Max Drawdown (%)': v['max_drawdown']} for y, v in dd_static.items() if not isinstance(v, dict) or 'error' not in v]
                             if plot_data:
@@ -179,7 +179,7 @@ if analyze_button or scheme_code:
 
                         # Ulcer Index
                         st.subheader("Static Ulcer Index")
-                        ulcer_static = metrics.get('static_ulcer_index_data', {}).get('static_ulcer_indices', {})
+                        ulcer_static = metrics.get('static_ulcer_index_data', {})
                         if ulcer_static:
                             plot_data = [{'Years': f"{y}Y", 'Ulcer Index': v} for y, v in ulcer_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -191,7 +191,7 @@ if analyze_button or scheme_code:
                     with col2:
                         # Rolling Max Drawdown
                         st.subheader("Rolling Max Drawdown Statistics")
-                        rolling_dd = metrics.get('rolling_drawdown_data', {}).get('rolling_drawdowns', [])
+                        rolling_dd = metrics.get('rolling_drawdown_data', [])
                         if rolling_dd:
                             plot_data = [{'Window': f"{i['rolling_window']}Y", 'Median': i['median'], 'Worst (Min)': i['min'], 'Latest': i['latest']} for i in rolling_dd if 'error' not in i]
                             if plot_data:
@@ -205,7 +205,7 @@ if analyze_button or scheme_code:
 
                         # Calmar Ratio
                         st.subheader("Static Calmar Ratio")
-                        calmar_static = metrics.get('static_calmar_ratio_data', {}).get('static_calmar_ratios', {})
+                        calmar_static = metrics.get('static_calmar_ratio_data', {})
                         if calmar_static:
                             plot_data = [{'Years': f"{y}Y", 'Ratio': v} for y, v in calmar_static.items() if not isinstance(v, dict)]
                             if plot_data:
@@ -222,7 +222,7 @@ if analyze_button or scheme_code:
                         col1, col2 = st.columns(2)
                         with col1:
                             # Alpha
-                            alpha_data = metrics.get('static_alpha_data', {}).get('static_alphas', {})
+                            alpha_data = metrics.get('static_alpha_data', {})
                             if alpha_data:
                                 plot_data = [{'Years': f"{y}Y", 'Alpha (%)': v} for y, v in alpha_data.items() if not isinstance(v, dict)]
                                 if plot_data:
@@ -231,7 +231,7 @@ if analyze_button or scheme_code:
                                     st.plotly_chart(fig, width="stretch")
                             
                             # Beta
-                            beta_data = metrics.get('static_beta_data', {}).get('static_betas', {})
+                            beta_data = metrics.get('static_beta_data', {})
                             if beta_data:
                                 plot_data = [{'Years': f"{y}Y", 'Beta': v} for y, v in beta_data.items() if not isinstance(v, dict)]
                                 if plot_data:
@@ -241,7 +241,7 @@ if analyze_button or scheme_code:
 
                         with col2:
                             # Information Ratio
-                            ir_data = metrics.get('static_information_ratio_data', {}).get('static_information_ratios', {})
+                            ir_data = metrics.get('static_information_ratio_data', {})
                             if ir_data:
                                 plot_data = [{'Years': f"{y}Y", 'Information Ratio': v} for y, v in ir_data.items() if not isinstance(v, dict)]
                                 if plot_data:
@@ -250,7 +250,7 @@ if analyze_button or scheme_code:
                                     st.plotly_chart(fig, width="stretch")
                             
                             # Hit Ratio
-                            hit_data = metrics.get('static_hit_ratio_data', {}).get('static_hit_ratios', {})
+                            hit_data = metrics.get('static_hit_ratio_data', {})
                             if hit_data:
                                 plot_data = [{'Years': f"{y}Y", 'Hit Ratio (%)': v} for y, v in hit_data.items() if not isinstance(v, dict)]
                                 if plot_data:

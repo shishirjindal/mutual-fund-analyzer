@@ -16,9 +16,8 @@ class StaticStandardDeviationCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and std_devs data.
+            Dictionary containing static Standard Deviation data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         std_devs = {}
@@ -26,7 +25,7 @@ class StaticStandardDeviationCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
                 std_devs[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'std_devs': std_devs}
+            return std_devs
         end_date = df.index[-1]
         
         for year in Constants.STATIC_STANDARD_DEVIATION_YEARS:
@@ -66,7 +65,4 @@ class StaticStandardDeviationCalculator:
                     'error': f'Error calculating Standard Deviation: {str(e)}'
                 }
         
-        return {
-            'scheme_name': scheme_name,
-            'std_devs': std_devs
-        }
+        return std_devs

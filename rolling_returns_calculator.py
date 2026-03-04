@@ -15,9 +15,8 @@ class RollingReturnsCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and rolling_returns data.
+            Dictionary containing rolling returns data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         rolling_returns = {}
@@ -25,7 +24,7 @@ class RollingReturnsCalculator:
         if df is None or df.empty:
             for year in Constants.ROLLING_YEARS:
                 rolling_returns[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'rolling_returns': rolling_returns}
+            return rolling_returns
         
         for year in Constants.ROLLING_YEARS:
             days = year * Constants.TRADING_DAYS_PER_YEAR
@@ -69,7 +68,4 @@ class RollingReturnsCalculator:
                 'max': round(cagr_values.max(), Constants.DECIMAL_PLACES)
             }
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_returns': rolling_returns
-        }
+        return rolling_returns

@@ -16,9 +16,8 @@ class StaticDownsideDeviationCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and downside_devs data.
+            Dictionary containing static downside deviation data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         downside_devs = {}
@@ -26,7 +25,7 @@ class StaticDownsideDeviationCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS:
                 downside_devs[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'downside_devs': downside_devs}
+            return downside_devs
         end_date = df.index[-1]
         
         for year in Constants.STATIC_DOWNSIDE_DEVIATION_YEARS:
@@ -66,7 +65,4 @@ class StaticDownsideDeviationCalculator:
                     'error': f'Error calculating Downside Deviation: {str(e)}'
                 }
         
-        return {
-            'scheme_name': scheme_name,
-            'downside_devs': downside_devs
-        }
+        return downside_devs

@@ -18,9 +18,8 @@ class StaticHitRatioCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with scheme_name and static_hit_ratios data.
+            Dictionary containing static Hit Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_hit_ratios = {}
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -28,7 +27,7 @@ class StaticHitRatioCalculator:
         if combined_df is None:
             for year in Constants.STATIC_HIT_RATIO_YEARS:
                 static_hit_ratios[year] = {'error': 'Data alignment failed or no overlapping data'}
-            return {'scheme_name': scheme_name, 'static_hit_ratios': static_hit_ratios}
+            return static_hit_ratios
             
         end_date = combined_df.index[-1]
         
@@ -58,7 +57,4 @@ class StaticHitRatioCalculator:
             except Exception as e:
                 static_hit_ratios[year] = {'error': f'Error calculating Hit Ratio: {str(e)}'}
                 
-        return {
-            'scheme_name': scheme_name,
-            'static_hit_ratios': static_hit_ratios
-        }
+        return static_hit_ratios

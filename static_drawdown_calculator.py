@@ -16,9 +16,8 @@ class StaticDrawdownCalculator:
             scheme_data: Dictionary containing scheme data
             
         Returns:
-            Dictionary with scheme_name and drawdowns data.
+            Dictionary containing static drawdown data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         df = Utils.convert_to_dataframe(scheme_data)
         
         drawdowns = {}
@@ -26,7 +25,7 @@ class StaticDrawdownCalculator:
         if df is None or df.empty:
             for year in Constants.STATIC_DRAWDOWN_YEARS:
                 drawdowns[year] = {'error': 'No data available'}
-            return {'scheme_name': scheme_name, 'drawdowns': drawdowns}
+            return drawdowns
         end_date = df.index[-1]
         
         for year in Constants.STATIC_DRAWDOWN_YEARS:
@@ -81,7 +80,4 @@ class StaticDrawdownCalculator:
             except Exception as e:
                 drawdowns[year] = {'error': f'Error calculating Drawdown: {str(e)}'}
         
-        return {
-            'scheme_name': scheme_name,
-            'drawdowns': drawdowns
-        }
+        return drawdowns

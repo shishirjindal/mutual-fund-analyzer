@@ -106,8 +106,8 @@ class MutualFundAnalyzer:
             print("-" * 60)
             
             for year in Constants.ROLLING_YEARS:
-                if year in self.rolling_data['rolling_returns']:
-                    year_data = self.rolling_data['rolling_returns'][year]
+                if year in self.rolling_data:
+                    year_data = self.rolling_data[year]
                     if 'error' in year_data:
                         print(f"{year} Year(s): {year_data['error']}")
                     else:
@@ -119,35 +119,35 @@ class MutualFundAnalyzer:
             print("-" * 60)
             
             for year in self.years_to_calculate:
-                if year in self.calendar_data['calendar_returns']:
-                    return_value = self.calendar_data['calendar_returns'][year]
+                if year in self.calendar_data:
+                    return_value = self.calendar_data[year]
                     if return_value is None:
                         print(f"{year}: N/A")
                     else:
                         print(f"{year}: {return_value}%")
         
         # Static Metrics
-        self._print_static_metrics("Static Standard Deviation (Annualized Volatility %)", self.static_std_dev_data, 'std_devs', "%")
-        self._print_static_metrics("Static Downside Deviation (Annualized Downside Volatility %)", self.static_downside_dev_data, 'downside_devs', "%")
-        self._print_static_metrics("Static Hit Ratio (Outperformance %)", self.static_hit_ratio_data, 'static_hit_ratios', "%")
-        self._print_static_metrics("Sharpe Ratio", self.static_sharpe_data, 'static_sharpe_ratios')
-        self._print_static_metrics("Sortino Ratio", self.static_sortino_data, 'static_sortino_ratios')
-        self._print_static_metrics("Static Alpha (Jensen's Alpha %)", self.static_alpha_data, 'static_alphas', "%")
-        self._print_static_metrics("Static Beta", self.static_beta_data, 'static_betas')
-        self._print_static_metrics("Static Information Ratio", self.static_information_ratio_data, 'static_information_ratios')
-        self._print_static_metrics("Static Treynor Ratio", self.static_treynor_ratio_data, 'static_treynor_ratios')
-        self._print_static_metrics("Static Calmar Ratio", self.static_calmar_ratio_data, 'static_calmar_ratios')
-        self._print_static_metrics("Static Ulcer Index", self.static_ulcer_index_data, 'static_ulcer_indices')
+        self._print_static_metrics("Static Standard Deviation (Annualized Volatility %)", self.static_std_dev_data, "%")
+        self._print_static_metrics("Static Downside Deviation (Annualized Downside Volatility %)", self.static_downside_dev_data, "%")
+        self._print_static_metrics("Static Hit Ratio (Outperformance %)", self.static_hit_ratio_data, "%")
+        self._print_static_metrics("Sharpe Ratio", self.static_sharpe_data)
+        self._print_static_metrics("Sortino Ratio", self.static_sortino_data)
+        self._print_static_metrics("Static Alpha (Jensen's Alpha %)", self.static_alpha_data, "%")
+        self._print_static_metrics("Static Beta", self.static_beta_data)
+        self._print_static_metrics("Static Information Ratio", self.static_information_ratio_data)
+        self._print_static_metrics("Static Treynor Ratio", self.static_treynor_ratio_data)
+        self._print_static_metrics("Static Calmar Ratio", self.static_calmar_ratio_data)
+        self._print_static_metrics("Static Ulcer Index", self.static_ulcer_index_data)
 
         # Rolling Metrics Tables
-        self._print_rolling_table("Rolling Standard Deviation (Volatility %)", self.rolling_std_dev_data, 'rolling_std_devs')
-        self._print_rolling_table("Rolling Hit Ratio (Outperformance %)", self.rolling_hit_ratio_data, 'rolling_hit_ratios', is_percentage=True)
-        self._print_rolling_table("Rolling Sharpe Ratio", self.rolling_sharpe_data, 'rolling_sharpe_ratios', is_ratio=True)
-        self._print_rolling_table("Rolling Sortino Ratio", self.rolling_sortino_data, 'rolling_sortino_ratios', is_ratio=True)
-        self._print_rolling_table("Rolling Alpha (Jensen's Alpha %)", self.rolling_alpha_data, 'rolling_alphas')
-        self._print_rolling_table("Rolling Beta", self.rolling_beta_data, 'rolling_betas')
-        self._print_rolling_table("Rolling Information Ratio", self.rolling_information_ratio_data, 'rolling_information_ratios')
-        self._print_rolling_table("Rolling Max Drawdown", self.rolling_drawdown_data, 'rolling_drawdowns', is_percentage=True)
+        self._print_rolling_table("Rolling Standard Deviation (Volatility %)", self.rolling_std_dev_data)
+        self._print_rolling_table("Rolling Hit Ratio (Outperformance %)", self.rolling_hit_ratio_data, is_percentage=True)
+        self._print_rolling_table("Rolling Sharpe Ratio", self.rolling_sharpe_data, is_ratio=True)
+        self._print_rolling_table("Rolling Sortino Ratio", self.rolling_sortino_data, is_ratio=True)
+        self._print_rolling_table("Rolling Alpha (Jensen's Alpha %)", self.rolling_alpha_data)
+        self._print_rolling_table("Rolling Beta", self.rolling_beta_data)
+        self._print_rolling_table("Rolling Information Ratio", self.rolling_information_ratio_data)
+        self._print_rolling_table("Rolling Max Drawdown", self.rolling_drawdown_data, is_percentage=True)
         
         # Static Max Drawdown Table
         self._print_static_drawdown_table()
@@ -156,7 +156,7 @@ class MutualFundAnalyzer:
 
     def _print_static_drawdown_table(self) -> None:
         """Helper to print the static max drawdown and recovery table."""
-        if not self.static_drawdown_data or 'drawdowns' not in self.static_drawdown_data:
+        if not self.static_drawdown_data:
             return
             
         print("\nMax Drawdown & Recovery Time:")
@@ -165,30 +165,30 @@ class MutualFundAnalyzer:
         print("-" * 60)
         
         for year in Constants.STATIC_DRAWDOWN_YEARS:
-            if year in self.static_drawdown_data['drawdowns']:
-                dd_value = self.static_drawdown_data['drawdowns'][year]
+            if year in self.static_drawdown_data:
+                dd_value = self.static_drawdown_data[year]
                 if isinstance(dd_value, dict) and 'error' in dd_value:
                     print(f"{year} Year(s): {dd_value['error']}")
                 else:
                     print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
 
-    def _print_static_metrics(self, title: str, data: Dict[str, Any], key: str, unit: str = "") -> None:
+    def _print_static_metrics(self, title: str, data: Dict[str, Any], unit: str = "") -> None:
         """Helper to print static metrics in a consistent format."""
-        if not data or key not in data:
+        if not data:
             return
             
         print(f"\n{title}:")
         print("-" * 60)
         
-        for period, value in data[key].items():
+        for period, value in data.items():
             if isinstance(value, dict) and 'error' in value:
                 print(f"{period} Year(s): {value['error']}")
             else:
                 print(f"{period} Year(s): {value}{unit}")
 
-    def _print_rolling_table(self, title: str, data: Dict[str, Any], key: str, is_ratio: bool = False, is_percentage: bool = False) -> None:
+    def _print_rolling_table(self, title: str, data: List[Dict[str, Any]], is_ratio: bool = False, is_percentage: bool = False) -> None:
         """Helper to print rolling metrics tables in a consistent format."""
-        if not data or key not in data:
+        if not data:
             return
             
         print(f"\n{title}:")
@@ -200,7 +200,7 @@ class MutualFundAnalyzer:
             # Format for Sharpe/Sortino ratios
             print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
             print("-" * 80)
-            for item in data[key]:
+            for item in data:
                 w, d = item['rolling_window'], item['total_data']
                 if 'error' in item:
                     print(f"{w:<10} {d:<10} Error: {item['error']}")
@@ -210,7 +210,7 @@ class MutualFundAnalyzer:
             # Standard format for Alpha, Beta, Std Dev, etc.
             print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
             print("-" * 80)
-            for item in data[key]:
+            for item in data:
                 w, d = item['rolling_window'], item['total_data']
                 if 'error' in item:
                     print(f"{w:<10} {d:<10} Error: {item['error']}")

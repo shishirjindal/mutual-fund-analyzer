@@ -21,9 +21,8 @@ class StaticInformationRatioCalculator:
             benchmark_data: Dictionary containing benchmark data
             
         Returns:
-            Dictionary with static_information_ratios data.
+            Dictionary containing static Information Ratio data.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
         static_information_ratios = {}
         
         combined_df = Utils.align_dataframes(scheme_data, benchmark_data)
@@ -31,7 +30,7 @@ class StaticInformationRatioCalculator:
         if combined_df is None:
             for year in Constants.STATIC_INFORMATION_RATIO_YEARS:
                 static_information_ratios[year] = {'error': 'Data alignment failed or no overlapping data'}
-            return {'scheme_name': scheme_name, 'static_information_ratios': static_information_ratios}
+            return static_information_ratios
 
         end_date = combined_df.index[-1]
 
@@ -78,7 +77,4 @@ class StaticInformationRatioCalculator:
                     'error': f'Error calculating Information Ratio: {str(e)}'
                 }
                 
-        return {
-            'scheme_name': scheme_name,
-            'static_information_ratios': static_information_ratios
-        }
+        return static_information_ratios

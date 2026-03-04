@@ -17,10 +17,8 @@ class RollingStandardDeviationCalculator:
             scheme_data: Dictionary containing scheme data with 'data' key holding list of NAVs
             
         Returns:
-            Dictionary with scheme_name and rolling_std_devs data.
+            List of dictionaries containing rolling Standard Deviation stats.
         """
-        scheme_name = scheme_data.get('scheme_name', 'Unknown')
-        
         if 'data' not in scheme_data or not scheme_data['data']:
             rolling_std_devs = []
             for config in Constants.ROLLING_STANDARD_DEVIATION_MAP:
@@ -29,7 +27,7 @@ class RollingStandardDeviationCalculator:
                     'rolling_window': config['rolling_window'],
                     'error': 'No data available'
                 })
-            return {'scheme_name': scheme_name, 'rolling_std_devs': rolling_std_devs}
+            return rolling_std_devs
         
         historical_data = scheme_data['data']
         rolling_std_devs = []
@@ -112,7 +110,4 @@ class RollingStandardDeviationCalculator:
                 })
                 continue
         
-        return {
-            'scheme_name': scheme_name,
-            'rolling_std_devs': rolling_std_devs
-        }
+        return rolling_std_devs
