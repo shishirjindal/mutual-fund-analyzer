@@ -65,7 +65,10 @@ class RollingReturnsCalculator:
             rolling_returns[year] = {
                 'min': round(cagr_values.min(), Constants.DECIMAL_PLACES),
                 'avg': round(cagr_values.mean(), Constants.DECIMAL_PLACES),
-                'max': round(cagr_values.max(), Constants.DECIMAL_PLACES)
+                'max': round(cagr_values.max(), Constants.DECIMAL_PLACES),
+                'median': round(cagr_values.median(), Constants.DECIMAL_PLACES),
+                'percentile_25': round(cagr_values.quantile(0.25), Constants.DECIMAL_PLACES),
+                'std_dev': round(cagr_values.std(), Constants.DECIMAL_PLACES)
             }
         
         return rolling_returns

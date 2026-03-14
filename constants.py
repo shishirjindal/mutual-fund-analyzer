@@ -40,6 +40,10 @@ class Constants:
             'rolling_window': 3,
             'total_data': 10,
         },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
+        },
     ]
 
     # Static Sharpe ratio configuration
@@ -82,6 +86,10 @@ class Constants:
             'rolling_window': 3,
             'total_data': 10,
         },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
+        },
     ]
 
     # Rolling Sortino ratio configuration
@@ -93,6 +101,10 @@ class Constants:
         {
             'rolling_window': 3,
             'total_data': 10,
+        },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
         },
     ]
 
@@ -106,6 +118,10 @@ class Constants:
             'rolling_window': 3,
             'total_data': 10,
         },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
+        },
     ]
 
     # Rolling Beta configuration
@@ -117,6 +133,10 @@ class Constants:
         {
             'rolling_window': 3,
             'total_data': 10,
+        },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
         },
     ]
 
@@ -130,6 +150,10 @@ class Constants:
             'rolling_window': 3,
             'total_data': 10,
         },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
+        },
     ]
 
     # Rolling Hit Ratio configuration
@@ -142,6 +166,10 @@ class Constants:
             'rolling_window': 3,
             'total_data': 10,
         },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
+        },
     ]
 
     # Rolling Drawdown configuration
@@ -153,6 +181,10 @@ class Constants:
         {
             'rolling_window': 3,
             'total_data': 10,
+        },
+        {
+            'rolling_window': 5,
+            'total_data': 15,
         },
     ]
     

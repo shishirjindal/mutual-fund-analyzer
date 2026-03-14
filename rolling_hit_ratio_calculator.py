@@ -83,6 +83,7 @@ class RollingHitRatioCalculator:
                     'rolling_window': window_years,
                     'median': round(valid_ratios.median(), Constants.DECIMAL_PLACES),
                     'mean': round(valid_ratios.mean(), Constants.DECIMAL_PLACES),
+                    'percentile_25': round(valid_ratios.quantile(0.25), Constants.DECIMAL_PLACES),
                     'min': round(valid_ratios.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_ratios.max(), Constants.DECIMAL_PLACES),
                     'latest': round(valid_ratios.iloc[-1], Constants.DECIMAL_PLACES)

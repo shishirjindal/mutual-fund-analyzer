@@ -97,6 +97,8 @@ class RollingSharpeRatioCalculator:
                     'mean': round(valid_sharpes.mean(), Constants.DECIMAL_PLACES),
                     'positive_share': round((valid_sharpes > 0).mean() * 100, Constants.DECIMAL_PLACES),
                     'percentile_10': round(valid_sharpes.quantile(0.10), Constants.DECIMAL_PLACES),
+                    'percentile_25': round(valid_sharpes.quantile(0.25), Constants.DECIMAL_PLACES),
+                    'std_dev': round(valid_sharpes.std(), Constants.DECIMAL_PLACES),
                     'latest': round(valid_sharpes.iloc[-1], Constants.DECIMAL_PLACES)
                 })
         

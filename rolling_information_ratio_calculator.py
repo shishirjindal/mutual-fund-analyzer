@@ -93,6 +93,8 @@ class RollingInformationRatioCalculator:
                     'rolling_window': window_years,
                     'median': round(valid_ir.median(), Constants.DECIMAL_PLACES),
                     'mean': round(valid_ir.mean(), Constants.DECIMAL_PLACES),
+                    'std_dev': round(valid_ir.std(), Constants.DECIMAL_PLACES),
+                    'positive_share': round((valid_ir > 0).sum() / len(valid_ir) * 100, Constants.DECIMAL_PLACES),
                     'min': round(valid_ir.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_ir.max(), Constants.DECIMAL_PLACES),
                     'latest': round(valid_ir.iloc[-1], Constants.DECIMAL_PLACES)

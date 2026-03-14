@@ -103,6 +103,8 @@ class RollingAlphaCalculator:
                     'rolling_window': window_years,
                     'median': round(valid_alphas.median(), Constants.DECIMAL_PLACES),
                     'mean': round(valid_alphas.mean(), Constants.DECIMAL_PLACES),
+                    'std_dev': round(valid_alphas.std(), Constants.DECIMAL_PLACES),
+                    'positive_share': round((valid_alphas > 0).sum() / len(valid_alphas) * 100, Constants.DECIMAL_PLACES),
                     'min': round(valid_alphas.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_alphas.max(), Constants.DECIMAL_PLACES),
                     'latest': round(valid_alphas.iloc[-1], Constants.DECIMAL_PLACES)

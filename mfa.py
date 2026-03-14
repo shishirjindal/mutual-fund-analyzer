@@ -38,6 +38,8 @@ from rolling_information_ratio_calculator import RollingInformationRatioCalculat
 from static_hit_ratio_calculator import StaticHitRatioCalculator
 from rolling_hit_ratio_calculator import RollingHitRatioCalculator
 from rolling_drawdown_calculator import RollingDrawdownCalculator
+from worst_calendar_year_calculator import WorstCalendarYearCalculator
+from decision_engine import DecisionEngine
 
 
 class MutualFundAnalyzer:
@@ -83,6 +85,7 @@ class MutualFundAnalyzer:
         self.static_hit_ratio_data: Dict[str, Any] = {}
         self.rolling_hit_ratio_data: Dict[str, Any] = {}
         self.rolling_drawdown_data: Dict[str, Any] = {}
+        self.worst_calendar_data: Dict[str, Any] = {}
     
     def _display_metrics(self) -> None:
         """
@@ -97,7 +100,18 @@ class MutualFundAnalyzer:
         # Get scheme name from scheme_data (guaranteed to exist if we reach here)
         scheme_name = self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown'
         
+        # Calculate scores for display (relative to itself since only one fund in CLI mode)
+        metrics_raw = self.get_metrics()
+        metrics_with_scores = DecisionEngine.calculate_batch_scores([metrics_raw])[0]
+        category_scores = metrics_with_scores.get('category_scores', {})
+        final_score = metrics_with_scores.get('final_score', 0.0)
+
         print(f"\n{scheme_name}")
+        print("=" * 60)
+        print(f"OVERALL PERFORMANCE SCORE: {final_score}/100")
+        print("-" * 60)
+        for category, score in category_scores.items():
+            print(f"{category:<30}: {score:.2f}/100")
         print("=" * 60)
         
         # Print rolling returns
@@ -243,6 +257,7 @@ class MutualFundAnalyzer:
             'rolling_information_ratio_data': self.rolling_information_ratio_data,
             'static_hit_ratio_data': self.static_hit_ratio_data,
             'rolling_hit_ratio_data': self.rolling_hit_ratio_data,
+            'worst_calendar_data': self.worst_calendar_data,
         }
     
     def process_scheme(self) -> None:
@@ -271,6 +286,7 @@ class MutualFundAnalyzer:
         self.rolling_drawdown_data = RollingDrawdownCalculator.calculate(self.scheme_data)
         self.static_calmar_ratio_data = StaticCalmarRatioCalculator.calculate(self.scheme_data)
         self.static_ulcer_index_data = StaticUlcerIndexCalculator.calculate(self.scheme_data)
+        self.worst_calendar_data = WorstCalendarYearCalculator.calculate(self.calendar_data)
 
         # Calculate Static Alpha, Beta, and Information Ratio if benchmark data is available
         if self.benchmark_data:

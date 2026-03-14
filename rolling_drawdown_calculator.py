@@ -87,6 +87,7 @@ class RollingDrawdownCalculator:
                         # 'max' is the best drawdown (closest to zero)
                         'median': round(valid_mdds.median(), Constants.DECIMAL_PLACES),
                         'mean': round(valid_mdds.mean(), Constants.DECIMAL_PLACES),
+                        'percentile_75': round(valid_mdds.quantile(0.75), Constants.DECIMAL_PLACES),
                         'min': round(valid_mdds.min(), Constants.DECIMAL_PLACES),
                         'max': round(valid_mdds.max(), Constants.DECIMAL_PLACES),
                         'latest': round(valid_mdds.iloc[-1], Constants.DECIMAL_PLACES)
