@@ -1,6 +1,34 @@
 import json
+import time
 from mftool import Mftool
 from typing import Dict, Any, Optional
+
+# Keywords that indicate a rate-limit / quota-exceeded response
+_QUOTA_SIGNALS = ("quota", "rate limit", "too many requests", "429", "throttl")
+
+def _is_quota_error(exc: Exception) -> bool:
+    """Return True if the exception looks like a quota / rate-limit error."""
+    msg = str(exc).lower()
+    return any(signal in msg for signal in _QUOTA_SIGNALS)
+
+def _fetch_with_backoff(fn, *args, max_retries: int = 5, base_delay: float = 2.0, **kwargs):
+    """
+    Call fn(*args, **kwargs) with exponential backoff on quota errors.
+
+    Delays: 2s, 4s, 8s, 16s, 32s (doubles each attempt).
+    Raises the last exception if all retries are exhausted.
+    """
+    delay = base_delay
+    for attempt in range(max_retries):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            if _is_quota_error(exc) and attempt < max_retries - 1:
+                print(f"Quota exceeded — retrying in {delay:.0f}s (attempt {attempt + 1}/{max_retries})...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
 
 class DataFetcher:
     """
@@ -31,7 +59,9 @@ class DataFetcher:
         """
         mf_tool = Mftool()
         try:
-            nav_data = mf_tool.get_scheme_historical_nav(scheme_code, as_json=True)
+            nav_data = _fetch_with_backoff(
+                mf_tool.get_scheme_historical_nav, scheme_code, as_json=True
+            )
             
             # Handle case where invalid scheme code returns None
             if nav_data is None:

@@ -6,6 +6,7 @@ from decision_engine import DecisionEngine
 from amfi_fetcher import get_all_categories, get_funds_for_category
 from constants import Constants
 import datetime
+import time
 
 st.set_page_config(page_title="Mutual Fund Analyzer", layout="wide")
 
@@ -62,6 +63,7 @@ else:
 
 if run_analysis:
     if analysis_mode == "By Category" and selected_category:
+        category_status = None
         with st.spinner(f"Fetching all Direct Growth funds in '{selected_category}' from AMFI..."):
             try:
                 funds = get_funds_for_category(selected_category)
@@ -72,9 +74,11 @@ if run_analysis:
         if not funds:
             st.warning(f"No Direct Growth funds found for category: {selected_category}")
         else:
-            st.info(f"Found {len(funds)} funds in '{selected_category}'. Starting analysis...")
+            category_status = st.empty()
+            category_status.info(f"Found {len(funds)} funds in '{selected_category}'. Starting analysis...")
             scheme_codes = [f["scheme_code"] for f in funds]
     else:
+        category_status = None
         scheme_codes = [code.strip() for code in scheme_codes_input.split(",") if code.strip()]
 
     if not scheme_codes:
@@ -95,7 +99,11 @@ if run_analysis:
                         st.warning(f"Could not fetch data for scheme code {code}.")
                 except Exception as e:
                     st.warning(f"Skipped scheme {code}: {str(e)}")
+                if idx < len(scheme_codes) - 1:
+                    time.sleep(0.5)
             progress.empty()
+            if category_status:
+                category_status.success(f"Analysed all {len(all_results)} funds in '{selected_category}'.")
 
         if all_results:
             # st.write(f"Analyzing {len(all_results)} funds...")
