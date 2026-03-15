@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from mfa import MutualFundAnalyzer
 from decision_engine import DecisionEngine
+from amfi_fetcher import get_all_categories, get_funds_for_category
 from constants import Constants
 import datetime
 
@@ -44,18 +45,46 @@ st.markdown("Analyze mutual fund performance using various risk and return metri
 
 # Sidebar for input
 st.sidebar.header("Input Parameters")
-scheme_codes_input = st.sidebar.text_input("Enter Scheme Code(s)", value="", help="Enter multiple codes separated by comma (e.g., 101206,112277)")
-analyze_button = st.sidebar.button("Analyze")
 
-if analyze_button or scheme_codes_input:
-    scheme_codes = [code.strip() for code in scheme_codes_input.split(",") if code.strip()]
-    
+analysis_mode = st.sidebar.radio("Analysis Mode", ["By Scheme Code", "By Category"], horizontal=True)
+
+if analysis_mode == "By Scheme Code":
+    scheme_codes_input = st.sidebar.text_input("Enter Scheme Code(s)", value="", help="Enter multiple codes separated by comma (e.g., 101206,112277)")
+    analyze_button = st.sidebar.button("Analyze")
+    run_analysis = analyze_button or bool(scheme_codes_input)
+    selected_category = None
+else:
+    scheme_codes_input = ""
+    all_categories = get_all_categories()
+    selected_category = st.sidebar.selectbox("Select Fund Category", all_categories)
+    analyze_button = st.sidebar.button("Analyze Category")
+    run_analysis = analyze_button
+
+if run_analysis:
+    if analysis_mode == "By Category" and selected_category:
+        with st.spinner(f"Fetching all Direct Growth funds in '{selected_category}' from AMFI..."):
+            try:
+                funds = get_funds_for_category(selected_category)
+            except Exception as e:
+                st.error(f"Failed to fetch funds from AMFI: {e}")
+                funds = []
+
+        if not funds:
+            st.warning(f"No Direct Growth funds found for category: {selected_category}")
+        else:
+            st.info(f"Found {len(funds)} funds in '{selected_category}'. Starting analysis...")
+            scheme_codes = [f["scheme_code"] for f in funds]
+    else:
+        scheme_codes = [code.strip() for code in scheme_codes_input.split(",") if code.strip()]
+
     if not scheme_codes:
         st.info("Please enter one or more scheme codes in the sidebar.")
     else:
         all_results = []
         with st.spinner(f"Analyzing {len(scheme_codes)} mutual funds..."):
-            for code in scheme_codes:
+            progress = st.progress(0, text="Starting analysis...")
+            for idx, code in enumerate(scheme_codes):
+                progress.progress((idx + 1) / len(scheme_codes), text=f"Analyzing fund {idx + 1} of {len(scheme_codes)}...")
                 try:
                     analyzer = MutualFundAnalyzer(code)
                     analyzer.process_scheme()
@@ -63,9 +92,10 @@ if analyze_button or scheme_codes_input:
                     if metrics and metrics.get('scheme_name') != 'Unknown':
                         all_results.append(metrics)
                     else:
-                        st.error(f"Could not fetch data for scheme code {code}.")
+                        st.warning(f"Could not fetch data for scheme code {code}.")
                 except Exception as e:
-                    st.error(f"Error analyzing scheme {code}: {str(e)}")
+                    st.warning(f"Skipped scheme {code}: {str(e)}")
+            progress.empty()
 
         if all_results:
             # st.write(f"Analyzing {len(all_results)} funds...")
@@ -74,7 +104,8 @@ if analyze_button or scheme_codes_input:
             # st.write("Batch calculation complete.")
 
             # --- Multi-Fund Comparison Section ---
-            st.header("🏆 Mutual Fund Comparison Summary")
+            header_label = f"🏆 {selected_category} — Fund Comparison" if selected_category else "🏆 Mutual Fund Comparison Summary"
+            st.header(header_label)
             
             # Prepare comparison table data with multi-line headers
             comparison_data = []
@@ -570,4 +601,4 @@ if analyze_button or scheme_codes_input:
 
 
 else:
-    st.info("Enter one or more scheme codes in the sidebar and click 'Analyze' to begin.")
+    st.info("Select an analysis mode in the sidebar and click 'Analyze' to begin.")
