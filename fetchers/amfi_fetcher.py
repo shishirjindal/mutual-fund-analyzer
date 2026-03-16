@@ -7,7 +7,7 @@ import logging
 import requests
 from typing import Dict, List, Optional
 from constants.amfi_constants import (
-    AMFI_URL, CATEGORY_KEYWORDS, DIRECT_KEYWORDS, GROWTH_KEYWORDS, EXCLUDE_KEYWORDS
+    AMFI_URL, CATEGORY_KEYWORDS, DIRECT_KEYWORDS, GROWTH_KEYWORDS, EXCLUDE_KEYWORDS, FUND_GROUPS
 )
 
 
@@ -20,6 +20,14 @@ class AmfiFetcher:
     def get_all_categories(self) -> List[str]:
         """Return the list of all supported categories."""
         return list(CATEGORY_KEYWORDS.keys())
+
+    def get_all_groups(self) -> List[str]:
+        """Return the list of broad fund groups (Equity, Debt, Hybrid, etc.)."""
+        return list(FUND_GROUPS.keys())
+
+    def get_categories_for_group(self, group: str) -> List[str]:
+        """Return sub-categories for a given broad group."""
+        return FUND_GROUPS.get(group, [])
 
     def get_funds_for_category(self, category: str) -> List[Dict]:
         """

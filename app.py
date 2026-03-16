@@ -44,8 +44,11 @@ if analysis_mode == "By Scheme Code":
     selected_category = None
 else:
     scheme_codes_input = ""
-    all_categories = AmfiFetcher().get_all_categories()
-    selected_category = st.sidebar.selectbox("Select Fund Category", all_categories)
+    fetcher = AmfiFetcher()
+    all_groups = fetcher.get_all_groups()
+    selected_group = st.sidebar.selectbox("Select Fund Type", all_groups)
+    categories_for_group = fetcher.get_categories_for_group(selected_group)
+    selected_category = st.sidebar.selectbox("Select Category", categories_for_group)
     analyze_button = st.sidebar.button("Analyze Category")
     run_analysis = analyze_button
 
