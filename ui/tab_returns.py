@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from typing import Dict, Any
+from ui.metric_colors import get_color, get_colors
 
 
 class ReturnsTab:
@@ -17,15 +18,19 @@ class ReturnsTab:
         with col1:
             st.markdown("#### CAGR by Period (1Y / 3Y / 5Y)")
             roll = metrics.get('rolling_data', {})
-            cagr_periods, cagr_values = [], []
-            for y, label in [(1, '1Y'), (3, '3Y'), (5, '5Y')]:
-                val = roll.get(y, {}).get('avg') if isinstance(roll.get(y), dict) else None
-                cagr_periods.append(label)
-                cagr_values.append(val if val is not None else 0)
+            metric_ids = ['static_1y_return', 'static_3y_cagr', 'static_5y_cagr']
+            periods = ['1Y', '3Y', '5Y']
+            years = [1, 3, 5]
+            cagr_values = [
+                roll.get(y, {}).get('avg') if isinstance(roll.get(y), dict) else None
+                for y in years
+            ]
+            colors = [get_color(mid, v) for mid, v in zip(metric_ids, cagr_values)]
+            plot_vals = [v if v is not None else 0 for v in cagr_values]
             fig = go.Figure(go.Bar(
-                x=cagr_periods, y=cagr_values,
-                text=[f"{v:.2f}%" for v in cagr_values], textposition='auto',
-                marker_color=['#636EFA', '#EF553B', '#00CC96']
+                x=periods, y=plot_vals,
+                text=[f"{v:.2f}%" for v in plot_vals], textposition='auto',
+                marker_color=colors
             ))
             fig.update_layout(template="plotly_white", title="Avg Rolling CAGR (%)", yaxis_title="CAGR (%)", height=380)
             st.plotly_chart(fig, use_container_width=True)
@@ -36,7 +41,7 @@ class ReturnsTab:
             cal_plot = sorted([(yr, v) for yr, v in cal.items() if v is not None])
             if cal_plot:
                 df_cal = pd.DataFrame(cal_plot, columns=['Year', 'Return (%)'])
-                colors = ['crimson' if v < 0 else 'steelblue' for v in df_cal['Return (%)']]
+                colors = [get_color('calendar_avg', v) for v in df_cal['Return (%)']]
                 fig = go.Figure(go.Bar(
                     x=df_cal['Year'].astype(str), y=df_cal['Return (%)'],
                     marker_color=colors,

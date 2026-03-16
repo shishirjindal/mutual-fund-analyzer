@@ -4,6 +4,7 @@ import logging
 import streamlit as st
 import plotly.graph_objects as go
 from typing import Dict, Any
+from ui.metric_colors import get_color
 
 _NO_DATA_FIG_HEIGHT = 350
 _NO_DATA_ANNOTATION = dict(text="Benchmark data unavailable", showarrow=False, font_size=14)
@@ -37,10 +38,11 @@ class ManagerSkillTab:
         alpha = metrics.get('static_alpha_data', {})
         vals = {y: alpha.get(y) for y in [3, 5] if not isinstance(alpha.get(y), dict) and alpha.get(y) is not None}
         if vals:
+            mids = {3: 'static_alpha_3y', 5: 'static_alpha_5y'}
             fig = go.Figure(go.Bar(
                 x=[f"{y}Y" for y in vals], y=list(vals.values()),
                 text=[f"{v:.2f}%" for v in vals.values()], textposition='auto',
-                marker_color=['green' if v >= 0 else 'red' for v in vals.values()]
+                marker_color=[get_color(mids[y], v) for y, v in vals.items()]
             ))
             fig.update_layout(template="plotly_white", title="Alpha (%)", yaxis_title="Alpha (%)", height=350)
         else:
@@ -53,10 +55,11 @@ class ManagerSkillTab:
         ir = metrics.get('static_information_ratio_data', {})
         vals = {y: ir.get(y) for y in [3, 5] if not isinstance(ir.get(y), dict) and ir.get(y) is not None}
         if vals:
+            mids = {3: 'static_ir_3y', 5: 'static_ir_5y'}
             fig = go.Figure(go.Bar(
                 x=[f"{y}Y" for y in vals], y=list(vals.values()),
                 text=[f"{v:.2f}" for v in vals.values()], textposition='auto',
-                marker_color=['#636EFA', '#EF553B']
+                marker_color=[get_color(mids[y], v) for y, v in vals.items()]
             ))
             fig.update_layout(template="plotly_white", title="Information Ratio", yaxis_title="IR", height=350)
         else:
@@ -69,10 +72,11 @@ class ManagerSkillTab:
         hr = metrics.get('static_hit_ratio_data', {})
         vals = {y: hr.get(y) for y in [3, 5] if not isinstance(hr.get(y), dict) and hr.get(y) is not None}
         if vals:
+            mids = {3: 'static_hit_ratio_3y', 5: 'static_hit_ratio_5y'}
             fig = go.Figure(go.Bar(
                 x=[f"{y}Y" for y in vals], y=list(vals.values()),
                 text=[f"{v:.2f}%" for v in vals.values()], textposition='auto',
-                marker_color=['#00CC96', '#AB63FA']
+                marker_color=[get_color(mids[y], v) for y, v in vals.items()]
             ))
             fig.update_layout(template="plotly_white", title="Hit Ratio (%)", yaxis_title="Hit Ratio (%)", height=350)
         else:
@@ -84,11 +88,12 @@ class ManagerSkillTab:
         st.markdown("#### Rolling Alpha 3Y — Median / % Positive / Std Dev")
         ra_3y = next((i for i in metrics.get('rolling_alpha_data', []) if i.get('rolling_window') == 3), None)
         if ra_3y and 'error' not in ra_3y:
+            keys = ['rolling_alpha_3y_median', 'rolling_alpha_3y_positive', 'rolling_alpha_3y_std']
             vals = [ra_3y.get('median', 0), ra_3y.get('positive_share', 0), ra_3y.get('std_dev', 0)]
             fig = go.Figure(go.Bar(
                 x=['Median Alpha', '% Positive Windows', 'Std Dev'], y=vals,
                 text=[f"{v:.2f}" for v in vals], textposition='auto',
-                marker_color=['#19D3F3', '#FF6692', '#B6E880']
+                marker_color=[get_color(k, v) for k, v in zip(keys, vals)]
             ))
             fig.update_layout(template="plotly_white", title="Rolling Alpha 3Y Stats", height=350)
         else:
@@ -100,11 +105,12 @@ class ManagerSkillTab:
         st.markdown("#### Rolling Information Ratio 3Y — Median / % Positive / Std Dev")
         rir_3y = next((i for i in metrics.get('rolling_information_ratio_data', []) if i.get('rolling_window') == 3), None)
         if rir_3y and 'error' not in rir_3y:
+            keys = ['rolling_ir_3y_median', 'rolling_ir_3y_positive', 'rolling_ir_3y_std']
             vals = [rir_3y.get('median', 0), rir_3y.get('positive_share', 0), rir_3y.get('std_dev', 0)]
             fig = go.Figure(go.Bar(
                 x=['Median IR', '% Positive IR', 'Std Dev'], y=vals,
                 text=[f"{v:.2f}" for v in vals], textposition='auto',
-                marker_color=['#636EFA', '#EF553B', '#00CC96']
+                marker_color=[get_color(k, v) for k, v in zip(keys, vals)]
             ))
             fig.update_layout(template="plotly_white", title="Rolling IR 3Y Stats", height=350)
         else:
