@@ -61,6 +61,20 @@ else:
     analyze_button = st.sidebar.button("Analyze Category")
     run_analysis = analyze_button
 
+st.sidebar.divider()
+st.sidebar.markdown("**Chart Color Guide**")
+st.sidebar.markdown(
+    """
+<div style="line-height:2">
+  <span style="color:#2ecc71;font-size:18px">●</span>&nbsp; Excellent<br>
+  <span style="color:#3498db;font-size:18px">●</span>&nbsp; Good<br>
+  <span style="color:#f39c12;font-size:18px">●</span>&nbsp; Average<br>
+  <span style="color:#e74c3c;font-size:18px">●</span>&nbsp; Weak
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
 if run_analysis:
     if analysis_mode == "By Category" and selected_category:
         category_status = None
@@ -160,8 +174,17 @@ if 'all_results' in st.session_state:
             sharpe = metrics['static_sharpe_data'][3]
         st.metric("3Y Sharpe Ratio", sharpe)
 
-    st.info(f"Analyzing **{metrics['scheme_name']}** based on **{risk_profile}** risk profile scorecard: "
-            "Returns, Risk, Risk-Adjusted, Manager Skill, and Consistency.")
+    from decision_engine.risk_profiles import RISK_PROFILES
+    _weights = RISK_PROFILES.get(risk_profile, {})
+    _labels = {
+        'Return Performance':         '📈 Returns',
+        'Risk':                       '📉 Risk',
+        'Risk-Adjusted Performance':  '⚖️ Risk-Adjusted',
+        'Manager Skill vs Benchmark': '🎯 Manager Skill',
+        'Consistency (Rolling)':      '🔄 Consistency',
+    }
+    _weight_str = '  |  '.join(f"{_labels[k]} **{int(v*100)}%**" for k, v in _weights.items())
+    st.info(f"Analyzing **{metrics['scheme_name']}** · **{risk_profile}** risk profile\n\n{_weight_str}")
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📈 Return Performance",
