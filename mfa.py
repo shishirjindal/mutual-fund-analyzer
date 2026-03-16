@@ -12,8 +12,9 @@ This script calculates various types of returns and risk metrics for mutual fund
 """
 
 import sys
+import logging
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from constants import Constants
 from data_fetcher import DataFetcher
 from rolling_returns_calculator import RollingReturnsCalculator
@@ -40,6 +41,8 @@ from rolling_hit_ratio_calculator import RollingHitRatioCalculator
 from rolling_drawdown_calculator import RollingDrawdownCalculator
 from worst_calendar_year_calculator import WorstCalendarYearCalculator
 from decision_engine import DecisionEngine
+
+logger = logging.getLogger(__name__)
 
 
 class MutualFundAnalyzer:
@@ -86,150 +89,19 @@ class MutualFundAnalyzer:
         self.rolling_hit_ratio_data: Dict[str, Any] = {}
         self.rolling_drawdown_data: Dict[str, Any] = {}
         self.worst_calendar_data: Dict[str, Any] = {}
-    
-    def _display_metrics(self) -> None:
-        """
-        Display the calculated metrics (returns and risk) for a scheme in a formatted way.
-        
-        Prints rolling returns (min/avg/max CAGR), calendar year returns, Standard Deviation,
-        Downside Deviation, Rolling Standard Deviation, Sharpe Ratio, Rolling Sharpe Ratio, Sortino Ratio, 
-        and Rolling Sortino Ratio in a formatted table format.
-        
-        Uses instance variables for data.
-        """
-        # Get scheme name from scheme_data (guaranteed to exist if we reach here)
-        scheme_name = self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown'
-        
-        # Calculate scores for display (relative to itself since only one fund in CLI mode)
-        metrics_raw = self.get_metrics()
-        metrics_with_scores = DecisionEngine.calculate_batch_scores([metrics_raw])[0]
-        category_scores = metrics_with_scores.get('category_scores', {})
-        final_score = metrics_with_scores.get('final_score', 0.0)
 
-        print(f"\n{scheme_name}")
-        print("=" * 60)
-        print(f"OVERALL PERFORMANCE SCORE: {final_score}/100")
-        print("-" * 60)
-        for category, score in category_scores.items():
-            print(f"{category:<30}: {score:.2f}/100")
-        print("=" * 60)
-        
-        # Print rolling returns
-        if self.rolling_data:
-            print("\nRolling Returns (Min / Average / Max CAGR):")
-            print("-" * 60)
-            
-            for year in Constants.ROLLING_YEARS:
-                if year in self.rolling_data:
-                    year_data = self.rolling_data[year]
-                    if 'error' in year_data:
-                        print(f"{year} Year(s): {year_data['error']}")
-                    else:
-                        print(f"{year} Year(s): {year_data['min']}% / {year_data['avg']}% / {year_data['max']}%")
-        
-        # Print calendar year returns
-        if self.calendar_data:
-            print("\nCalendar Year Returns:")
-            print("-" * 60)
-            
-            for year in self.years_to_calculate:
-                if year in self.calendar_data:
-                    return_value = self.calendar_data[year]
-                    if return_value is None:
-                        print(f"{year}: N/A")
-                    else:
-                        print(f"{year}: {return_value}%")
-        
-        # Static Metrics
-        self._print_static_metrics("Static Standard Deviation (Annualized Volatility %)", self.static_std_dev_data, "%")
-        self._print_static_metrics("Static Downside Deviation (Annualized Downside Volatility %)", self.static_downside_dev_data, "%")
-        self._print_static_metrics("Static Hit Ratio (Outperformance %)", self.static_hit_ratio_data, "%")
-        self._print_static_metrics("Sharpe Ratio", self.static_sharpe_data)
-        self._print_static_metrics("Sortino Ratio", self.static_sortino_data)
-        self._print_static_metrics("Static Alpha (Jensen's Alpha %)", self.static_alpha_data, "%")
-        self._print_static_metrics("Static Beta", self.static_beta_data)
-        self._print_static_metrics("Static Information Ratio", self.static_information_ratio_data)
-        self._print_static_metrics("Static Treynor Ratio", self.static_treynor_ratio_data)
-        self._print_static_metrics("Static Calmar Ratio", self.static_calmar_ratio_data)
-        self._print_static_metrics("Static Ulcer Index", self.static_ulcer_index_data)
-
-        # Rolling Metrics Tables
-        self._print_rolling_table("Rolling Standard Deviation (Volatility %)", self.rolling_std_dev_data)
-        self._print_rolling_table("Rolling Hit Ratio (Outperformance %)", self.rolling_hit_ratio_data, is_percentage=True)
-        self._print_rolling_table("Rolling Sharpe Ratio", self.rolling_sharpe_data, is_ratio=True)
-        self._print_rolling_table("Rolling Sortino Ratio", self.rolling_sortino_data, is_ratio=True)
-        self._print_rolling_table("Rolling Alpha (Jensen's Alpha %)", self.rolling_alpha_data)
-        self._print_rolling_table("Rolling Beta", self.rolling_beta_data)
-        self._print_rolling_table("Rolling Information Ratio", self.rolling_information_ratio_data)
-        self._print_rolling_table("Rolling Max Drawdown", self.rolling_drawdown_data, is_percentage=True)
-        
-        # Static Max Drawdown Table
-        self._print_static_drawdown_table()
-        
-        print("=" * 60)
-
-    def _print_static_drawdown_table(self) -> None:
-        """Helper to print the static max drawdown and recovery table."""
-        if not self.static_drawdown_data:
-            return
-            
-        print("\nMax Drawdown & Recovery Time:")
-        print("-" * 60)
-        print(f"{'Period':<15} {'Max Drawdown':<20} {'Recovery Time (Days)':<20}")
-        print("-" * 60)
-        
-        for year in Constants.STATIC_DRAWDOWN_YEARS:
-            if year in self.static_drawdown_data:
-                dd_value = self.static_drawdown_data[year]
-                if isinstance(dd_value, dict) and 'error' in dd_value:
-                    print(f"{year} Year(s): {dd_value['error']}")
-                else:
-                    print(f"{str(year) + ' Year(s)':<15} {str(dd_value['max_drawdown']) + '%':<20} {dd_value['max_duration_days']:<20}")
-
-    def _print_static_metrics(self, title: str, data: Dict[str, Any], unit: str = "") -> None:
-        """Helper to print static metrics in a consistent format."""
-        if not data:
-            return
-            
-        print(f"\n{title}:")
-        print("-" * 60)
-        
-        for period, value in data.items():
-            if isinstance(value, dict) and 'error' in value:
-                print(f"{period} Year(s): {value['error']}")
-            else:
-                print(f"{period} Year(s): {value}{unit}")
-
-    def _print_rolling_table(self, title: str, data: List[Dict[str, Any]], is_ratio: bool = False, is_percentage: bool = False) -> None:
-        """Helper to print rolling metrics tables in a consistent format."""
-        if not data:
-            return
-            
-        print(f"\n{title}:")
-        print("-" * 60)
-        
-        unit = "%" if is_percentage else ""
-        
-        if is_ratio:
-            # Format for Sharpe/Sortino ratios
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'10%ile':<10} {'Latest':<10} {'% > 0':<8}")
-            print("-" * 80)
-            for item in data:
-                w, d = item['rolling_window'], item['total_data']
-                if 'error' in item:
-                    print(f"{w:<10} {d:<10} Error: {item['error']}")
-                else:
-                    print(f"{w:<10} {d:<10} {item['median']:<10} {item['mean']:<10} {item['percentile_10']:<10} {item['latest']:<10} {item['positive_share']:<8}")
-        else:
-            # Standard format for Alpha, Beta, Std Dev, etc.
-            print(f"{'Window':<10} {'Data':<10} {'Median':<10} {'Mean':<10} {'Min':<10} {'Max':<10} {'Latest':<10}")
-            print("-" * 80)
-            for item in data:
-                w, d = item['rolling_window'], item['total_data']
-                if 'error' in item:
-                    print(f"{w:<10} {d:<10} Error: {item['error']}")
-                else:
-                    print(f"{w:<10} {d:<10} {item['median']}{unit:<9} {item['mean']}{unit:<9} {item['min']}{unit:<9} {item['max']}{unit:<9} {item['latest']}{unit:<9}")
+    def _run_step(self, step_name: str, fn, *args, **kwargs):
+        """Run a single calculation step, logging outcome. Returns empty dict or list on failure."""
+        scheme_name = self.scheme_data.get('scheme_name', self.scheme_code) if self.scheme_data else self.scheme_code
+        logger.info("[%s] Running: %s", scheme_name, step_name)
+        try:
+            result = fn(*args, **kwargs)
+            logger.info("[%s] Completed: %s", scheme_name, step_name)
+            return result
+        except Exception as e:
+            logger.error("[%s] Failed: %s — %s", scheme_name, step_name, e)
+            # Return same empty type as expected by callers
+            return [] if step_name.startswith("Rolling") else {}
 
     def get_metrics(self) -> Dict[str, Any]:
         """Return all calculated metrics as a dictionary for the UI or Decision Engine."""
@@ -271,53 +143,60 @@ class MutualFundAnalyzer:
             None (prints results to stdout)
         """
         if self.scheme_data is None:
+            logger.error(
+                "Cannot process scheme %s — no data available (fetch may have failed)", self.scheme_code
+            )
             return
-        
-        self.rolling_data = RollingReturnsCalculator.calculate(self.scheme_data)
-        self.calendar_data = CalendarYearReturnsCalculator.calculate(self.scheme_data, self.years_to_calculate)
-        self.static_std_dev_data = StaticStandardDeviationCalculator.calculate(self.scheme_data)
-        self.static_downside_dev_data = StaticDownsideDeviationCalculator.calculate(self.scheme_data)
-        self.rolling_std_dev_data = RollingStandardDeviationCalculator.calculate(self.scheme_data)
-        self.static_sharpe_data = StaticSharpeRatioCalculator.calculate(self.scheme_data)
-        self.rolling_sharpe_data = RollingSharpeRatioCalculator.calculate(self.scheme_data)
-        self.static_sortino_data = StaticSortinoRatioCalculator.calculate(self.scheme_data)
-        self.rolling_sortino_data = RollingSortinoRatioCalculator.calculate(self.scheme_data)
-        self.static_drawdown_data = StaticDrawdownCalculator.calculate(self.scheme_data)
-        self.rolling_drawdown_data = RollingDrawdownCalculator.calculate(self.scheme_data)
-        self.static_calmar_ratio_data = StaticCalmarRatioCalculator.calculate(self.scheme_data)
-        self.static_ulcer_index_data = StaticUlcerIndexCalculator.calculate(self.scheme_data)
-        self.worst_calendar_data = WorstCalendarYearCalculator.calculate(self.calendar_data)
 
-        # Calculate Static Alpha, Beta, and Information Ratio if benchmark data is available
+        scheme_name = self.scheme_data.get('scheme_name', self.scheme_code)
+        logger.info("Starting analysis for '%s'", scheme_name)
+
+        self.rolling_data         = self._run_step("Rolling Returns",            RollingReturnsCalculator.calculate,           self.scheme_data)
+        self.calendar_data        = self._run_step("Calendar Year Returns",       CalendarYearReturnsCalculator.calculate,      self.scheme_data, self.years_to_calculate)
+        self.static_std_dev_data  = self._run_step("Static Std Deviation",        StaticStandardDeviationCalculator.calculate,  self.scheme_data)
+        self.static_downside_dev_data = self._run_step("Static Downside Deviation", StaticDownsideDeviationCalculator.calculate, self.scheme_data)
+        self.rolling_std_dev_data = self._run_step("Rolling Std Deviation",       RollingStandardDeviationCalculator.calculate, self.scheme_data)
+        self.static_sharpe_data   = self._run_step("Static Sharpe Ratio",         StaticSharpeRatioCalculator.calculate,        self.scheme_data)
+        self.rolling_sharpe_data  = self._run_step("Rolling Sharpe Ratio",        RollingSharpeRatioCalculator.calculate,       self.scheme_data)
+        self.static_sortino_data  = self._run_step("Static Sortino Ratio",        StaticSortinoRatioCalculator.calculate,       self.scheme_data)
+        self.rolling_sortino_data = self._run_step("Rolling Sortino Ratio",       RollingSortinoRatioCalculator.calculate,      self.scheme_data)
+        self.static_drawdown_data = self._run_step("Static Drawdown",             StaticDrawdownCalculator.calculate,           self.scheme_data)
+        self.rolling_drawdown_data = self._run_step("Rolling Drawdown",           RollingDrawdownCalculator.calculate,          self.scheme_data)
+        self.static_calmar_ratio_data = self._run_step("Static Calmar Ratio",     StaticCalmarRatioCalculator.calculate,        self.scheme_data)
+        self.static_ulcer_index_data  = self._run_step("Static Ulcer Index",      StaticUlcerIndexCalculator.calculate,         self.scheme_data)
+        self.worst_calendar_data  = self._run_step("Worst Calendar Year",         WorstCalendarYearCalculator.calculate,        self.calendar_data)
+
         if self.benchmark_data:
-            self.static_alpha_data = StaticAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.static_beta_data = StaticBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.static_information_ratio_data = StaticInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.static_treynor_ratio_data = StaticTreynorRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.rolling_alpha_data = RollingAlphaCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.rolling_beta_data = RollingBetaCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.rolling_information_ratio_data = RollingInformationRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.static_hit_ratio_data = StaticHitRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
-            self.rolling_hit_ratio_data = RollingHitRatioCalculator.calculate(self.scheme_data, self.benchmark_data)
+            logger.info("Benchmark data available — running benchmark-based metrics for '%s'", scheme_name)
+            self.static_alpha_data             = self._run_step("Static Alpha",            StaticAlphaCalculator.calculate,            self.scheme_data, self.benchmark_data)
+            self.static_beta_data              = self._run_step("Static Beta",             StaticBetaCalculator.calculate,             self.scheme_data, self.benchmark_data)
+            self.static_information_ratio_data = self._run_step("Static Information Ratio", StaticInformationRatioCalculator.calculate, self.scheme_data, self.benchmark_data)
+            self.static_treynor_ratio_data     = self._run_step("Static Treynor Ratio",    StaticTreynorRatioCalculator.calculate,     self.scheme_data, self.benchmark_data)
+            self.rolling_alpha_data            = self._run_step("Rolling Alpha",           RollingAlphaCalculator.calculate,           self.scheme_data, self.benchmark_data)
+            self.rolling_beta_data             = self._run_step("Rolling Beta",            RollingBetaCalculator.calculate,            self.scheme_data, self.benchmark_data)
+            self.rolling_information_ratio_data = self._run_step("Rolling Information Ratio", RollingInformationRatioCalculator.calculate, self.scheme_data, self.benchmark_data)
+            self.static_hit_ratio_data         = self._run_step("Static Hit Ratio",        StaticHitRatioCalculator.calculate,         self.scheme_data, self.benchmark_data)
+            self.rolling_hit_ratio_data        = self._run_step("Rolling Hit Ratio",       RollingHitRatioCalculator.calculate,        self.scheme_data, self.benchmark_data)
+        else:
+            logger.warning("Benchmark data unavailable — skipping benchmark-based metrics for '%s'", scheme_name)
 
-        # Display all metrics
-        self._display_metrics()
+        logger.info("Analysis complete for '%s'", scheme_name)
 
 def main() -> None:
     """
     Main entry point for the script.
-    
-    Parses command-line arguments and processes each scheme code.
-    Calculates and prints returns for all provided scheme codes.
-    
+
     Usage:
-        python mutual_fund_analyzer.py <scheme_codes>
-        Example: python mutual_fund_analyzer.py 101206,101207
+        python mfa.py <scheme_codes>
+        Example: python mfa.py 101206,101207
     """
+    from logger_config import configure_logging
+    configure_logging()
     if len(sys.argv) < 2:
-        print("Error: Scheme codes not provided")
-        print("Usage: python mutual_fund_analyzer.py <scheme_codes>")
-        print("Example: python mutual_fund_analyzer.py 101206,101207")
+        logger.error(
+            "No scheme codes provided. Usage: python mfa.py <scheme_codes>  "
+            "(e.g. python mfa.py 101206,101207)"
+        )
         return
     
     scheme_codes = [code.strip() for code in sys.argv[1].split(",")]
@@ -325,6 +204,7 @@ def main() -> None:
     for scheme_code in scheme_codes:
         mf_analyzer = MutualFundAnalyzer(scheme_code)
         mf_analyzer.process_scheme()
+        logger.info("Metrics ready for scheme code '%s' — use the Streamlit UI to view charts", scheme_code)
 
 
 if __name__ == "__main__":
