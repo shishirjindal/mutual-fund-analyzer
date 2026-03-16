@@ -19,8 +19,10 @@ class ComparisonTable:
 
         comparison_data, raw_comparison_data = [], []
         for metrics in all_results:
-            row = {'Scheme Name': metrics['scheme_name'], 'Overall\nScore': metrics['final_score']}
-            raw_row = {'Scheme Name': metrics['scheme_name'], 'Overall Score': metrics['final_score']}
+            launch = metrics.get('launch_date', 'N/A')
+            name_with_date = f"{metrics['scheme_name']}\n🗓 {launch}"
+            row = {'Scheme Name': name_with_date, 'Overall\nScore': metrics['final_score']}
+            raw_row = {'Scheme Name': metrics['scheme_name'], 'Launch Date': launch, 'Overall Score': metrics['final_score']}
             for cat, score in metrics['category_scores'].items():
                 row[cat.replace(' ', '\n').replace('-', '-\n')] = score
                 raw_row[cat] = score

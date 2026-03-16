@@ -102,6 +102,7 @@ class MutualFundAnalyzer:
         """Return all calculated metrics as a dictionary for the UI or Decision Engine."""
         return {
             'scheme_name': self.scheme_data.get('scheme_name', 'Unknown') if self.scheme_data else 'Unknown',
+            'launch_date': (self.scheme_data.get('scheme_start_date') or {}).get('date', 'N/A') if self.scheme_data else 'N/A',
             'rolling_data': self.rolling_data,
             'calendar_data': self.calendar_data,
             'static_std_dev_data': self.static_std_dev_data,
