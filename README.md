@@ -29,6 +29,30 @@ Scores are computed relative to the peer group using Z-Score normalization follo
 
 Python 3.10 or higher (tested with Python 3.14.2).
 
+### Setup
+
+**1. Create and activate a virtual environment**
+
+```bash
+python3 -m venv mfenv
+source mfenv/bin/activate        # macOS / Linux
+mfenv\Scripts\activate           # Windows
+```
+
+**2. Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+**3. Deactivate when done**
+
+```bash
+deactivate
+```
+
+### Dependencies
+
 ```
 mftool>=3.0
 pandas>=2.0.0
@@ -37,12 +61,6 @@ streamlit>=1.0.0
 plotly>=5.0.0
 scipy>=1.10.0
 matplotlib>=3.7.0
-```
-
-Install all dependencies:
-
-```bash
-pip install -r requirements.txt
 ```
 
 ---
@@ -77,10 +95,10 @@ Analyze one or more funds from the terminal:
 
 ```bash
 # Single fund
-python3 mfa.py 112277
+python3 main.py 112277
 
 # Multiple funds
-python3 mfa.py 112277,120465
+python3 main.py 112277,120465
 ```
 
 ---
@@ -95,7 +113,7 @@ python3 mfa.py 112277,120465
 
 MIT License
 
-Copyright (c) 2025
+Copyright (c) 2026
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
