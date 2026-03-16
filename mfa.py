@@ -90,10 +90,8 @@ class MutualFundAnalyzer:
     def _run_step(self, step_name: str, fn, *args, **kwargs):
         """Run a single calculation step, logging outcome. Returns empty dict or list on failure."""
         scheme_name = self.scheme_data.get('scheme_name', self.scheme_code) if self.scheme_data else self.scheme_code
-        self.logger.info("[%s] Running: %s", scheme_name, step_name)
         try:
             result = fn(*args, **kwargs)
-            self.logger.info("[%s] Completed: %s", scheme_name, step_name)
             return result
         except Exception as e:
             self.logger.error("[%s] Failed: %s — %s", scheme_name, step_name, e)

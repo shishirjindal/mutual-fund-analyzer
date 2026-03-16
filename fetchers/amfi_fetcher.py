@@ -90,7 +90,14 @@ class AmfiFetcher:
 
     def _classify_category(self, name: str) -> Optional[str]:
         name_lower = name.lower()
-        for category, keywords in CATEGORY_KEYWORDS.items():
+        # Sort categories by their longest keyword descending so more specific
+        # patterns (e.g. "large & mid cap") match before shorter ones ("mid cap").
+        sorted_categories = sorted(
+            CATEGORY_KEYWORDS.items(),
+            key=lambda item: max(len(kw) for kw in item[1]),
+            reverse=True,
+        )
+        for category, keywords in sorted_categories:
             if any(kw in name_lower for kw in keywords):
                 return category
         return None
