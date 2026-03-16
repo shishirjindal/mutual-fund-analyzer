@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Dict, Any, List, Optional
 from constants.constants import Constants
-from decision_engine.scoring_weights import CATEGORY_WEIGHTS
+from decision_engine.risk_profiles import RISK_PROFILES
 from decision_engine.metric_configs import METRIC_CONFIGS
 from decision_engine.metric_extractor import extract_metric_value
 
@@ -12,13 +12,22 @@ class DecisionEngine:
     """
 
     @staticmethod
-    def calculate_batch_scores(all_funds_metrics: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def calculate_batch_scores(
+        all_funds_metrics: List[Dict[str, Any]],
+        risk_profile: str = 'Balanced',
+    ) -> List[Dict[str, Any]]:
         """
         Perform batch normalization and scoring for a list of funds.
         Pipeline: Metric Value -> Z-Score -> Sigmoid -> 0-100 Score.
+
+        Args:
+            all_funds_metrics: List of raw metric dicts from MutualFundAnalyzer.
+            risk_profile: One of 'Conservative', 'Balanced', 'Aggressive'.
         """
         if not all_funds_metrics:
             return []
+
+        weights = RISK_PROFILES.get(risk_profile, RISK_PROFILES['Balanced'])
 
         # 1. Initialize result structure for each fund
         results = []
@@ -69,7 +78,7 @@ class DecisionEngine:
         # 3. Calculate final weighted score for each fund
         for fund in results:
             final_score = 0.0
-            for category, weight in CATEGORY_WEIGHTS.items():
+            for category, weight in weights.items():
                 final_score += fund['category_scores'].get(category, 0.0) * weight
             fund['final_score'] = round(float(final_score), 2)
             

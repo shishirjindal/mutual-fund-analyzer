@@ -4,6 +4,7 @@ import datetime
 import streamlit as st
 from mfa import MutualFundAnalyzer
 from decision_engine.decision_engine import DecisionEngine
+from decision_engine.risk_profiles import RISK_PROFILES
 from fetchers.amfi_fetcher import AmfiFetcher
 from log.logger_config import configure_logging
 from ui import comparison_table, tab_returns, tab_risk, tab_risk_adjusted, tab_manager_skill, tab_consistency
@@ -34,6 +35,14 @@ st.title("📈 Mutual Fund Analyzer")
 st.markdown("Analyze mutual fund performance using various risk and return metrics.")
 
 st.sidebar.header("Input Parameters")
+
+risk_profile = st.sidebar.radio(
+    "Risk Profile",
+    list(RISK_PROFILES.keys()),
+    index=0,  # default: Balanced
+    help="Conservative: lower risk weight. Balanced: equal. Aggressive: higher return weight.",
+)
+
 analysis_mode = st.sidebar.radio("Analysis Mode", ["By Scheme Code", "By Category"], horizontal=True)
 
 if analysis_mode == "By Scheme Code":
@@ -102,9 +111,18 @@ if run_analysis:
                 category_status.success(f"Analysed all {len(all_results)} funds in '{selected_category}'.")
 
         if all_results:
-            all_results = DecisionEngine.calculate_batch_scores(all_results)
+            all_results = DecisionEngine.calculate_batch_scores(all_results, risk_profile)
+            st.session_state['raw_metrics'] = all_results  # store pre-score for re-scoring
             st.session_state['all_results'] = all_results
             st.session_state['selected_category'] = selected_category
+            st.session_state['scored_profile'] = risk_profile
+
+# ── Re-score if profile changed without re-fetching ──
+if 'raw_metrics' in st.session_state and st.session_state.get('scored_profile') != risk_profile:
+    st.session_state['all_results'] = DecisionEngine.calculate_batch_scores(
+        st.session_state['raw_metrics'], risk_profile
+    )
+    st.session_state['scored_profile'] = risk_profile
 
 # ── Render results (persists across widget interactions via session_state) ──
 if 'all_results' in st.session_state:
@@ -142,7 +160,7 @@ if 'all_results' in st.session_state:
             sharpe = metrics['static_sharpe_data'][3]
         st.metric("3Y Sharpe Ratio", sharpe)
 
-    st.info(f"Analyzing **{metrics['scheme_name']}** based on weighted scorecard: "
+    st.info(f"Analyzing **{metrics['scheme_name']}** based on **{risk_profile}** risk profile scorecard: "
             "Returns, Risk, Risk-Adjusted, Manager Skill, and Consistency.")
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
