@@ -14,3 +14,7 @@ QUOTA_SIGNALS: Tuple[str, ...] = (
     "throttled",
     "throttling",
 )
+
+# NAV disk cache configuration
+NAV_CACHE_DIR = ".cache/nav"
+NAV_CACHE_TTL_DAYS = 7

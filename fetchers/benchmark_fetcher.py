@@ -31,9 +31,16 @@ def _load_from_disk(index_name: str) -> Optional[Dict[str, Any]]:
     if not files:
         return None
     latest = files[0]
-    age = datetime.datetime.now() - datetime.datetime.fromtimestamp(latest.stat().st_mtime)
-    if age.days >= BENCHMARK_CACHE_TTL_DAYS:
-        logger.info("Disk cache '%s' is %d days old — will refresh", latest.name, age.days)
+    try:
+        # Parse date from filename: {prefix}_{YYYY-MM-DD}.json
+        date_str = latest.stem.split("_")[-1]
+        file_date = datetime.date.fromisoformat(date_str)
+        age_days = (datetime.date.today() - file_date).days
+    except (ValueError, IndexError):
+        age_days = BENCHMARK_CACHE_TTL_DAYS  # unparseable — treat as stale
+
+    if age_days >= BENCHMARK_CACHE_TTL_DAYS:
+        logger.info("Disk cache '%s' is %d days old — will refresh", latest.name, age_days)
         return None
     logger.info("Loading '%s' TRI data from disk cache (%s)", index_name, latest.name)
     return json.loads(latest.read_text(encoding="utf-8"))
