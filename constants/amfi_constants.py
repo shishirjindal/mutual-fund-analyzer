@@ -15,6 +15,7 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
     "Mid Cap": ["mid cap"],
     "Small Cap": ["small cap"],
     "Large & Mid Cap": ["large & mid cap", "large and mid cap", "large mid cap"],
+    "Mid & Small Cap": ["mid & small cap", "mid and small cap", "mid small cap"],
     "Multi Cap": ["multi cap", "multicap"],
     "Flexi Cap": ["flexi cap", "flexicap", "flexible cap"],
     "Focused Fund": ["focused fund", "focused equity"],

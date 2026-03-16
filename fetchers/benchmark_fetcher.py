@@ -1,29 +1,73 @@
 import json
 import logging
 import datetime
+import pathlib
 import requests
 from functools import lru_cache
 from typing import Dict, Any, Optional
 from utils.fetch_utils import fetch_with_backoff
 from constants.benchmark_constants import (
-    BENCHMARK_DEFAULT_INDEX, BENCHMARK_TRI_URL, BENCHMARK_TRI_HEADERS, BENCHMARK_TRI_START_DATE
+    BENCHMARK_DEFAULT_INDEX, BENCHMARK_TRI_URL, BENCHMARK_TRI_HEADERS,
+    BENCHMARK_TRI_START_DATE, BENCHMARK_CACHE_DIR, BENCHMARK_CACHE_TTL_DAYS
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_index_name(index_name: str) -> str:
+    return index_name.replace(" ", "_").replace("/", "-")
+
+
+def _cache_dir() -> pathlib.Path:
+    p = pathlib.Path(BENCHMARK_CACHE_DIR)
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _load_from_disk(index_name: str) -> Optional[Dict[str, Any]]:
+    """Find the most recent cache file for index_name. Return data if within TTL, else None."""
+    prefix = _safe_index_name(index_name)
+    files = sorted(_cache_dir().glob(f"{prefix}_*.json"), reverse=True)
+    if not files:
+        return None
+    latest = files[0]
+    age = datetime.datetime.now() - datetime.datetime.fromtimestamp(latest.stat().st_mtime)
+    if age.days >= BENCHMARK_CACHE_TTL_DAYS:
+        logger.info("Disk cache '%s' is %d days old — will refresh", latest.name, age.days)
+        return None
+    logger.info("Loading '%s' TRI data from disk cache (%s)", index_name, latest.name)
+    return json.loads(latest.read_text(encoding="utf-8"))
+
+
+def _save_to_disk(index_name: str, data: Dict[str, Any]) -> None:
+    prefix = _safe_index_name(index_name)
+    date_str = datetime.date.today().strftime("%Y-%m-%d")
+    p = _cache_dir() / f"{prefix}_{date_str}.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    logger.info("Saved '%s' TRI data to disk cache (%s)", index_name, p.name)
+
+
+def _latest_cache_file(index_name: str) -> Optional[pathlib.Path]:
+    """Return the most recent cache file for index_name, regardless of age."""
+    prefix = _safe_index_name(index_name)
+    files = sorted(_cache_dir().glob(f"{prefix}_*.json"), reverse=True)
+    return files[0] if files else None
 
 
 @lru_cache(maxsize=8)
 def _fetch_tri_cached(index_name: str) -> Optional[Dict[str, Any]]:
-    """Module-level cached fetch — keyed by index_name, survives across BenchmarkFetcher instances."""
-    logger = logging.getLogger(__name__)
-    url = BENCHMARK_TRI_URL
-    headers = BENCHMARK_TRI_HEADERS
-    start_date = BENCHMARK_TRI_START_DATE
+    """Fetch TRI data — disk cache first, then network. In-process lru_cache on top."""
+    cached = _load_from_disk(index_name)
+    if cached is not None:
+        return cached
+
     end_date = datetime.date.today().strftime("%d-%b-%Y")
-    logger.info("Requesting TRI data for '%s' from %s to %s", index_name, start_date, end_date)
+    logger.info("Requesting TRI data for '%s' from %s to %s", index_name, BENCHMARK_TRI_START_DATE, end_date)
 
     payload = json.dumps({
         "cinfo": json.dumps({
             "name": index_name,
-            "startDate": start_date,
+            "startDate": BENCHMARK_TRI_START_DATE,
             "endDate": end_date,
             "indexName": index_name,
         })
@@ -31,21 +75,30 @@ def _fetch_tri_cached(index_name: str) -> Optional[Dict[str, Any]]:
 
     try:
         response = fetch_with_backoff(
-            requests.post, url, headers=headers, data=payload, timeout=15
+            requests.post, BENCHMARK_TRI_URL, headers=BENCHMARK_TRI_HEADERS,
+            data=payload, timeout=15
         )
         response.raise_for_status()
         records = json.loads(response.json()["d"])
-        data = [
-            {
-                "date": datetime.datetime.strptime(r["Date"], "%d %b %Y").strftime("%d-%m-%Y"),
-                "nav": float(r["TotalReturnsIndex"]),
-            }
-            for r in reversed(records)
-        ]
-        logger.info("Successfully fetched %d TRI data points for '%s'", len(data), index_name)
-        return {"data": data}
+        data = {
+            "data": [
+                {
+                    "date": datetime.datetime.strptime(r["Date"], "%d %b %Y").strftime("%d-%m-%Y"),
+                    "nav": float(r["TotalReturnsIndex"]),
+                }
+                for r in reversed(records)
+            ]
+        }
+        logger.info("Fetched %d TRI data points for '%s'", len(data["data"]), index_name)
+        _save_to_disk(index_name, data)
+        return data
     except Exception as e:
-        logger.error("Failed to fetch benchmark TRI data for '%s': %s", index_name, e)
+        logger.error("Failed to fetch TRI data for '%s': %s", index_name, e)
+        # Fall back to stale disk cache rather than returning nothing
+        stale = _latest_cache_file(index_name)
+        if stale:
+            logger.warning("Using stale disk cache '%s' due to fetch failure", stale.name)
+            return json.loads(stale.read_text(encoding="utf-8"))
         return None
 
 
@@ -57,10 +110,10 @@ class BenchmarkFetcher:
 
     def fetch(self, index_name: str = BENCHMARK_DEFAULT_INDEX) -> Optional[Dict[str, Any]]:
         """
-        Fetch historical TRI data for a benchmark index from niftyindices.com.
+        Fetch TRI data for a benchmark index.
 
-        Returns a dict with 'data' key — list of {'date': 'DD-MM-YYYY', 'nav': float}
-        sorted oldest-first, or None on error. Results are cached by index_name.
+        Priority: in-process lru_cache → disk cache (< 7 days old) → network.
+        On network failure, falls back to stale disk cache if available.
         """
         self.logger.info("Fetching benchmark TRI data for index '%s'", index_name)
         return _fetch_tri_cached(index_name)

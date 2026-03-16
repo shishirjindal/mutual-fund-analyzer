@@ -25,3 +25,6 @@ Thumbs.db
 # Project specific
 *.log
 *.pyc
+
+# Benchmark TRI disk cache
+.cache/
