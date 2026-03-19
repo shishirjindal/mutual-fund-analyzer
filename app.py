@@ -37,14 +37,9 @@ st.markdown("Analyze mutual fund performance using various risk and return metri
 
 st.sidebar.header("Input Parameters")
 
-risk_profile = st.sidebar.radio(
-    "Risk Profile",
-    list(RISK_PROFILES.keys()),
-    index=0,  # default: Balanced
-    help="Conservative: lower risk weight. Balanced: equal. Aggressive: higher return weight.",
-)
+risk_profile = st.session_state.get('risk_profile', 'Balanced')
 
-analysis_mode = st.sidebar.radio("Analysis Mode", ["By Scheme Code", "By Category"], horizontal=True)
+analysis_mode = st.sidebar.radio("Analysis Mode", ["By Category", "By Scheme Code"], horizontal=True)
 
 if analysis_mode == "By Scheme Code":
     scheme_codes_input = st.sidebar.text_input("Enter Scheme Code(s)", value="",
@@ -83,6 +78,22 @@ st.sidebar.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+st.sidebar.divider()
+st.sidebar.markdown("**Risk Profile Weights**")
+_sb_short = ['📈', '📉', '⚖️', '🎯', '🔄']
+_sb_cats = list(RISK_PROFILES['Balanced'].keys())
+_sb_rows = ["", "📈 Returns", "📉 Risk", "⚖️ Risk-Adj", "🎯 Mgr Skill", "🔄 Consistency"]
+_sb_profiles = list(RISK_PROFILES.keys())
+_sb_table = "<table style='width:100%;font-size:12px;border-collapse:collapse'>"
+_sb_table += "<tr><td></td>" + "".join(f"<td style='text-align:center'><b>{p}</b></td>" for p in _sb_profiles) + "</tr>"
+for cat, label in zip(_sb_cats, _sb_rows[1:]):
+    _sb_table += f"<tr><td>{label}</td>"
+    for p in _sb_profiles:
+        _sb_table += f"<td style='text-align:center'>{int(RISK_PROFILES[p][cat]*100)}%</td>"
+    _sb_table += "</tr>"
+_sb_table += "</table>"
+st.sidebar.markdown(_sb_table, unsafe_allow_html=True)
 
 if run_analysis:
     if analysis_mode == "By Category" and selected_category:
@@ -143,22 +154,68 @@ if run_analysis:
 
         if all_results:
             all_results = DecisionEngine.calculate_batch_scores(all_results, risk_profile)
-            st.session_state['raw_metrics'] = all_results  # store pre-score for re-scoring
+            st.session_state['raw_metrics'] = all_results
             st.session_state['all_results'] = all_results
             st.session_state['selected_category'] = selected_category
-            st.session_state['scored_profile'] = risk_profile
-
-# ── Re-score if profile changed without re-fetching ──
-if 'raw_metrics' in st.session_state and st.session_state.get('scored_profile') != risk_profile:
-    st.session_state['all_results'] = DecisionEngine.calculate_batch_scores(
-        st.session_state['raw_metrics'], risk_profile
-    )
-    st.session_state['scored_profile'] = risk_profile
+            st.session_state.pop('scored_key', None)  # force re-score on next render
 
 # ── Render results (persists across widget interactions via session_state) ──
 if 'all_results' in st.session_state:
-    all_results = st.session_state['all_results']
     selected_category = st.session_state.get('selected_category')
+
+    # Risk profile selector — shown inline after analysis so user can explore
+    if 'risk_profile' not in st.session_state:
+        st.session_state['risk_profile'] = 'Balanced'
+
+    _labels = {
+        'Return Performance':         '📈 Returns',
+        'Risk':                       '📉 Risk',
+        'Risk-Adjusted Performance':  '⚖️ Risk-Adjusted',
+        'Manager Skill vs Benchmark': '🎯 Manager Skill',
+        'Consistency (Rolling)':      '🔄 Consistency',
+    }
+    _categories = list(RISK_PROFILES['Balanced'].keys())
+
+    risk_profile = st.radio(
+            "Risk Profile",
+            list(RISK_PROFILES.keys()) + ["Custom"],
+            key='risk_profile',
+            horizontal=True,
+            help="Change to re-score all funds without re-fetching data.",
+        )
+
+    # Custom weights input
+    custom_weights = None
+    if risk_profile == 'Custom':
+        _prev = st.session_state.get('custom_weights', {c: int(v * 100) for c, v in RISK_PROFILES['Balanced'].items()})
+        st.markdown("**Set custom weights (must sum to 100%)**")
+        cols = st.columns(5)
+        raw = {}
+        for i, cat in enumerate(_categories):
+            with cols[i]:
+                raw[cat] = st.number_input(
+                    _labels[cat], min_value=0, max_value=100,
+                    value=_prev.get(cat, 20), step=5, key=f"cw_{cat}"
+                )
+        total = sum(raw.values())
+        if total != 100:
+            st.warning(f"Weights sum to **{total}%** — must equal 100% to apply.")
+            custom_weights = None
+        else:
+            st.success("✓ Weights sum to 100%")
+            custom_weights = {c: v / 100 for c, v in raw.items()}
+            st.session_state['custom_weights'] = raw
+
+    # Re-score if profile or custom weights changed — always read all_results AFTER this
+    _score_key = (risk_profile, str(custom_weights))
+    if st.session_state.get('scored_key') != _score_key:
+        st.session_state['all_results'] = DecisionEngine.calculate_batch_scores(
+            st.session_state['raw_metrics'], risk_profile, custom_weights
+        )
+        st.session_state['scored_key'] = _score_key
+
+    # Read all_results AFTER potential re-score so this render always has fresh data
+    all_results = st.session_state['all_results']
 
     comparison_table.render(all_results, selected_category)
     st.divider()
@@ -193,13 +250,6 @@ if 'all_results' in st.session_state:
 
     from decision_engine.risk_profiles import RISK_PROFILES
     _weights = RISK_PROFILES.get(risk_profile, {})
-    _labels = {
-        'Return Performance':         '📈 Returns',
-        'Risk':                       '📉 Risk',
-        'Risk-Adjusted Performance':  '⚖️ Risk-Adjusted',
-        'Manager Skill vs Benchmark': '🎯 Manager Skill',
-        'Consistency (Rolling)':      '🔄 Consistency',
-    }
     _weight_str = '  |  '.join(f"{_labels[k]} **{int(v*100)}%**" for k, v in _weights.items())
     st.info(f"Analyzing **{metrics['scheme_name']}** · **{risk_profile}** risk profile\n\n{_weight_str}")
 
