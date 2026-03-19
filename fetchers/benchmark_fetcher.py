@@ -8,7 +8,8 @@ from typing import Dict, Any, Optional
 from utils.fetch_utils import fetch_with_backoff
 from constants.benchmark_constants import (
     BENCHMARK_DEFAULT_INDEX, BENCHMARK_TRI_URL, BENCHMARK_TRI_HEADERS,
-    BENCHMARK_TRI_START_DATE, BENCHMARK_CACHE_DIR, BENCHMARK_CACHE_TTL_DAYS
+    BENCHMARK_TRI_START_DATE, BENCHMARK_CACHE_DIR, BENCHMARK_CACHE_TTL_DAYS,
+    CATEGORY_BENCHMARK_MAP, SECTOR_BENCHMARK_MAP,
 )
 
 logger = logging.getLogger(__name__)
@@ -115,6 +116,25 @@ class BenchmarkFetcher:
     def __init__(self):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
+    @staticmethod
+    def index_for_category(category: str) -> str:
+        """Return the appropriate benchmark index name for a fund category.
+
+        `category` may be a raw mftool scheme_category string like
+        'Equity Scheme - Large Cap Fund', so we do a case-insensitive
+        substring match against the map keys.
+        """
+        category_lower = category.lower()
+        for key, index in CATEGORY_BENCHMARK_MAP.items():
+            if key.lower() in category_lower:
+                return index
+        return BENCHMARK_DEFAULT_INDEX
+
+    @staticmethod
+    def index_for_sector(sector: str) -> str:
+        """Return the appropriate benchmark index name for a sector label."""
+        return SECTOR_BENCHMARK_MAP.get(sector, BENCHMARK_DEFAULT_INDEX)
+
     def fetch(self, index_name: str = BENCHMARK_DEFAULT_INDEX) -> Optional[Dict[str, Any]]:
         """
         Fetch TRI data for a benchmark index.
@@ -124,3 +144,15 @@ class BenchmarkFetcher:
         """
         self.logger.info("Fetching benchmark TRI data for index '%s'", index_name)
         return _fetch_tri_cached(index_name)
+
+    def fetch_for_category(self, category: str) -> Optional[Dict[str, Any]]:
+        """Resolve the correct benchmark for a fund category and fetch it."""
+        index_name = self.index_for_category(category)
+        self.logger.info("Category '%s' → benchmark '%s'", category, index_name)
+        return self.fetch(index_name)
+
+    def fetch_for_sector(self, sector: str) -> Optional[Dict[str, Any]]:
+        """Resolve the correct benchmark for a sector label and fetch it."""
+        index_name = self.index_for_sector(sector)
+        self.logger.info("Sector '%s' → benchmark '%s'", sector, index_name)
+        return self.fetch(index_name)

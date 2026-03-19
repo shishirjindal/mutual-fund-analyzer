@@ -6,6 +6,7 @@ from mfa import MutualFundAnalyzer
 from decision_engine.decision_engine import DecisionEngine
 from decision_engine.risk_profiles import RISK_PROFILES
 from fetchers.amfi_fetcher import AmfiFetcher
+from constants.amfi_constants import SECTOR_KEYWORDS
 from log.logger_config import configure_logging
 from ui import comparison_table, tab_returns, tab_risk, tab_risk_adjusted, tab_manager_skill, tab_consistency
 
@@ -51,6 +52,7 @@ if analysis_mode == "By Scheme Code":
     analyze_button = st.sidebar.button("Analyze")
     run_analysis = analyze_button or bool(scheme_codes_input)
     selected_category = None
+    selected_sector = None
 else:
     scheme_codes_input = ""
     fetcher = AmfiFetcher()
@@ -58,6 +60,13 @@ else:
     selected_group = st.sidebar.selectbox("Select Fund Type", all_groups)
     categories_for_group = fetcher.get_categories_for_group(selected_group)
     selected_category = st.sidebar.selectbox("Select Category", categories_for_group)
+    selected_sector = None
+    if selected_category == "Sectoral / Thematic":
+        with st.spinner("Loading sector list..."):
+            _all_sectoral = AmfiFetcher().get_funds_for_category("Sectoral / Thematic")
+            _sectors = fetcher.get_sectors_from_funds(_all_sectoral)
+        if _sectors:
+            selected_sector = st.sidebar.selectbox("Select Sector", _sectors)
     analyze_button = st.sidebar.button("Analyze Category")
     run_analysis = analyze_button
 
@@ -85,12 +94,20 @@ if run_analysis:
                 st.error(f"Failed to fetch funds from AMFI: {e}")
                 funds = []
 
+        # Filter by sector for Sectoral / Thematic
+        if selected_category == "Sectoral / Thematic" and selected_sector:
+            kws = SECTOR_KEYWORDS.get(selected_sector, [selected_sector.lower()])
+            funds = [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
+            display_label = f"'{selected_sector}' sector"
+        else:
+            display_label = f"'{selected_category}'"
+
         if not funds:
-            st.warning(f"No Direct Growth funds found for category: {selected_category}")
+            st.warning(f"No Direct Growth funds found for {display_label}")
             scheme_codes = []
         else:
             category_status = st.empty()
-            category_status.info(f"Found {len(funds)} funds in '{selected_category}'. Starting analysis...")
+            category_status.info(f"Found {len(funds)} funds in {display_label}. Starting analysis...")
             scheme_codes = [f["scheme_code"] for f in funds]
     else:
         category_status = None
@@ -106,7 +123,7 @@ if run_analysis:
                 progress.progress((idx + 1) / len(scheme_codes),
                                   text=f"Analyzing fund {idx + 1} of {len(scheme_codes)}...")
                 try:
-                    analyzer = MutualFundAnalyzer(code)
+                    analyzer = MutualFundAnalyzer(code, sector=selected_sector or "")
                     fund_name = analyzer.scheme_data.get('scheme_name', code) if analyzer.scheme_data else code
                     progress.progress((idx + 1) / len(scheme_codes),
                                       text=f"[{idx + 1}/{len(scheme_codes)}] Analyzing: {fund_name}")

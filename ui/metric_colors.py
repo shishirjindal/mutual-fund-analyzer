@@ -8,11 +8,12 @@ Ranges are defined in constants/metric_ranges.py.
 
 from typing import Optional
 from constants.metric_ranges import METRIC_RANGES
+from constants.ui_constants import COLOR_EXCELLENT, COLOR_GOOD, COLOR_AVERAGE, COLOR_WEAK
 
-EXCELLENT = '#2ecc71'
-GOOD      = '#3498db'
-AVERAGE   = '#f39c12'
-WEAK      = '#e74c3c'
+EXCELLENT = COLOR_EXCELLENT
+GOOD      = COLOR_GOOD
+AVERAGE   = COLOR_AVERAGE
+WEAK      = COLOR_WEAK
 
 
 def get_color(metric_id: str, value: Optional[float], fallback: str = GOOD) -> str:

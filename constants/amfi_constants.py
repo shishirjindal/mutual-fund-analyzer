@@ -109,3 +109,24 @@ FUND_GROUPS: Dict[str, List[str]] = {
         "Retirement Fund", "Children's Fund",
     ],
 }
+
+# Sector keyword map for Sectoral / Thematic funds
+# Keys are display labels; values are substrings matched against fund names (lowercase)
+SECTOR_KEYWORDS: Dict[str, List[str]] = {
+    "Banking & Financial":   ["banking", "financial", "bank & fin", "fintech"],
+    "IT & Technology":       ["technology", "it fund", "digital", "innovation", "tech"],
+    "Pharma & Healthcare":   ["pharma", "healthcare", "health care", "medic"],
+    "Infrastructure":        ["infrastructure", "infra"],
+    "Energy":                ["energy", "power", "oil", "gas"],
+    "Manufacturing":         ["manufacturing", "industrial", "industry"],
+    "Consumption":           ["consumption", "consumer", "fmcg", "retail"],
+    "PSU":                   ["psu", "public sector"],
+    "MNC":                   ["mnc", "multinational"],
+    "ESG":                   ["esg", "sustainability", "responsible"],
+    "Real Estate":           ["real estate", "reit"],
+    "Commodities":           ["commodities", "commodity", "metal", "mining"],
+    "Transportation":        ["transport", "logistics", "mobility"],
+    "Business Cycle":        ["business cycle"],
+    "Quant":                 ["quant"],
+    "Special Opportunities": ["special opportunities", "special situation"],
+}

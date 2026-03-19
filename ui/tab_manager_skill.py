@@ -5,9 +5,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from typing import Dict, Any
 from ui.metric_colors import get_color
-
-_NO_DATA_FIG_HEIGHT = 350
-_NO_DATA_ANNOTATION = dict(text="Benchmark data unavailable", showarrow=False, font_size=14)
+from constants.ui_constants import NO_DATA_FIG_HEIGHT as _NO_DATA_FIG_HEIGHT, BENCHMARK_NO_DATA_ANNOTATION as _NO_DATA_ANNOTATION
 
 
 class ManagerSkillTab:

@@ -5,18 +5,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from typing import Dict, Any
 from ui.metric_colors import get_color, GOOD
-
-# Maps (data_key, year) → metric_id
-_METRIC_ID = {
-    ('static_sharpe_data',        3): 'static_sharpe_3y',
-    ('static_sharpe_data',        5): 'static_sharpe_5y',
-    ('static_sortino_data',       3): 'static_sortino_3y',
-    ('static_sortino_data',       5): 'static_sortino_5y',
-    ('static_calmar_ratio_data',  3): 'static_calmar_3y',
-    ('static_calmar_ratio_data',  5): 'static_calmar_5y',
-    ('static_treynor_ratio_data', 3): 'static_treynor_3y',
-    ('static_treynor_ratio_data', 5): 'static_treynor_5y',
-}
+from constants.ui_constants import RISK_ADJUSTED_METRIC_ID as _METRIC_ID
 
 
 class RiskAdjustedTab:

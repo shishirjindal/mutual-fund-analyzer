@@ -44,23 +44,27 @@ from decision_engine.decision_engine import DecisionEngine
 class MutualFundAnalyzer:
     """Analyzer for mutual fund parameters including returns, risk measures, and performance metrics."""
     
-    def __init__(self, scheme_code: str):
+    def __init__(self, scheme_code: str, sector: str = ""):
         """
         Initialize the calculator and fetch scheme data.
-        
-        Initializes instance variables:
-        - years_to_calculate: List of years for calendar year returns calculation
-        - scheme_code: Mutual fund scheme code
-        - scheme_data: Historical NAV data for the scheme
-        
+
         Args:
             scheme_code: Mutual fund scheme code
+            sector: Optional sector label (e.g. 'IT & Technology') for Sectoral/Thematic funds.
+                    When provided, overrides the category-based benchmark selection.
         """
         self.years_to_calculate = [datetime.date.today().year - i for i in range(1, Constants.NUM_CALENDAR_YEARS + 1)]
         self.scheme_code = scheme_code
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.scheme_data = SchemeFetcher().fetch(self.scheme_code)
-        self.benchmark_data = BenchmarkFetcher().fetch()
+
+        # Resolve benchmark: sector takes priority, then category, then default NIFTY 50
+        bf = BenchmarkFetcher()
+        if sector:
+            self.benchmark_data = bf.fetch_for_sector(sector)
+        else:
+            scheme_category = (self.scheme_data or {}).get('scheme_category', '')
+            self.benchmark_data = bf.fetch_for_category(scheme_category)
         
         # Initialize results variables
         self.rolling_data: Dict[str, Any] = {}
