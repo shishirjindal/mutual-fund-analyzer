@@ -146,7 +146,7 @@ if run_analysis:
                         st.warning(f"Could not fetch data for scheme code {code}.")
                 except Exception as e:
                     st.warning(f"Skipped scheme {code}: {str(e)}")
-                if idx < len(scheme_codes) - 1:
+                if idx < len(scheme_codes) - 1 and not analyzer.nav_from_cache:
                     time.sleep(0.5)
             progress.empty()
             if category_status:

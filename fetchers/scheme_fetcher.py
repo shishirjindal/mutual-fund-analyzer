@@ -55,18 +55,20 @@ class SchemeFetcher:
     def __init__(self):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
-    def fetch(self, scheme_code: str) -> Optional[Dict[str, Any]]:
+    def fetch(self, scheme_code: str) -> tuple[Optional[Dict[str, Any]], bool]:
         """
         Fetch historical NAV data for a scheme.
 
         Priority: disk cache (< 7 days old) → network.
         On network failure, falls back to stale disk cache if available.
+
+        Returns (data, from_cache) where from_cache=True means no network call was made.
         """
         self.logger.info("Fetching NAV data for scheme code '%s'", scheme_code)
 
         cached = _load_from_disk(scheme_code)
         if cached is not None:
-            return cached
+            return cached, True
 
         mf_tool = Mftool()
         try:
@@ -77,7 +79,7 @@ class SchemeFetcher:
                 self.logger.error(
                     "No data returned for scheme '%s' — may be invalid or delisted", scheme_code
                 )
-                return None
+                return None, False
 
             result = json.loads(nav_data)
             self.logger.info(
@@ -85,7 +87,7 @@ class SchemeFetcher:
                 result.get("scheme_name", "Unknown"), scheme_code,
             )
             _save_to_disk(scheme_code, result)
-            return result
+            return result, False
 
         except json.JSONDecodeError as e:
             self.logger.error("Failed to parse JSON for scheme '%s': %s", scheme_code, e)
@@ -98,5 +100,5 @@ class SchemeFetcher:
         stale = _latest_cache_file(scheme_code)
         if stale:
             self.logger.warning("Using stale disk cache '%s' due to fetch failure", stale.name)
-            return json.loads(stale.read_text(encoding="utf-8"))
-        return None
+            return json.loads(stale.read_text(encoding="utf-8")), True
+        return None, False

@@ -56,7 +56,7 @@ class MutualFundAnalyzer:
         self.years_to_calculate = [datetime.date.today().year - i for i in range(1, Constants.NUM_CALENDAR_YEARS + 1)]
         self.scheme_code = scheme_code
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.scheme_data = SchemeFetcher().fetch(self.scheme_code)
+        self.scheme_data, self.nav_from_cache = SchemeFetcher().fetch(self.scheme_code)
 
         # Resolve benchmark: sector takes priority, then category, then default NIFTY 50
         bf = BenchmarkFetcher()
