@@ -8,7 +8,7 @@ import requests
 from typing import Dict, List, Optional
 from constants.amfi_constants import (
     AMFI_URL, CATEGORY_KEYWORDS, DIRECT_KEYWORDS, GROWTH_KEYWORDS, EXCLUDE_KEYWORDS,
-    FUND_GROUPS, SECTOR_KEYWORDS,
+    FUND_GROUPS, SECTOR_KEYWORDS, ETF_KEYWORDS,
 )
 
 
@@ -48,6 +48,16 @@ class AmfiFetcher:
             for sector, keywords in SECTOR_KEYWORDS.items():
                 if any(kw in name_lower for kw in keywords):
                     found.add(sector)
+        return sorted(found)
+
+    def get_etf_types_from_funds(self, funds: List[Dict]) -> List[str]:
+        """Extract unique ETF sub-types (Gold, Silver, etc.) present in a list of ETF fund names."""
+        found = set()
+        for f in funds:
+            name_lower = f["scheme_name"].lower()
+            for etf_type, keywords in ETF_KEYWORDS.items():
+                if any(kw in name_lower for kw in keywords):
+                    found.add(etf_type)
         return sorted(found)
 
     def fetch_and_parse(self, category_filter: Optional[str] = None) -> Dict[str, List[Dict]]:

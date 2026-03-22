@@ -130,3 +130,9 @@ SECTOR_KEYWORDS: Dict[str, List[str]] = {
     "Quant":                 ["quant"],
     "Special Opportunities": ["special opportunities", "special situation"],
 }
+
+# Sub-category keyword map for ETFs
+ETF_KEYWORDS: Dict[str, List[str]] = {
+    "Gold":   ["gold"],
+    "Silver": ["silver"],
+}

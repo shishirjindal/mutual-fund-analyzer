@@ -6,7 +6,7 @@ from mfa import MutualFundAnalyzer
 from decision_engine.decision_engine import DecisionEngine
 from decision_engine.risk_profiles import RISK_PROFILES
 from fetchers.amfi_fetcher import AmfiFetcher
-from constants.amfi_constants import SECTOR_KEYWORDS
+from constants.amfi_constants import SECTOR_KEYWORDS, ETF_KEYWORDS
 from log.logger_config import configure_logging
 from ui import comparison_table, tab_returns, tab_risk, tab_risk_adjusted, tab_manager_skill, tab_consistency
 
@@ -48,6 +48,7 @@ if analysis_mode == "By Scheme Code":
     run_analysis = analyze_button or bool(scheme_codes_input)
     selected_category = None
     selected_sector = None
+    selected_etf_type = None
 else:
     scheme_codes_input = ""
     fetcher = AmfiFetcher()
@@ -56,15 +57,21 @@ else:
     categories_for_group = fetcher.get_categories_for_group(selected_group)
     selected_category = st.sidebar.selectbox("Select Category", categories_for_group)
     selected_sector = None
+    selected_etf_type = None
     if selected_category == "Sectoral / Thematic":
         with st.spinner("Loading sector list..."):
             _all_sectoral = AmfiFetcher().get_funds_for_category("Sectoral / Thematic")
             _sectors = fetcher.get_sectors_from_funds(_all_sectoral)
         if _sectors:
             selected_sector = st.sidebar.selectbox("Select Sector", _sectors)
+    elif selected_category == "ETF":
+        with st.spinner("Loading ETF types..."):
+            _all_etfs = AmfiFetcher().get_funds_for_category("ETF")
+            _etf_types = fetcher.get_etf_types_from_funds(_all_etfs)
+        if _etf_types:
+            selected_etf_type = st.sidebar.selectbox("Select ETF Type", _etf_types)
     analyze_button = st.sidebar.button("Analyze Category")
     run_analysis = analyze_button
-
 st.sidebar.divider()
 st.sidebar.markdown("**Chart Color Guide**")
 st.sidebar.markdown(
@@ -110,6 +117,10 @@ if run_analysis:
             kws = SECTOR_KEYWORDS.get(selected_sector, [selected_sector.lower()])
             funds = [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
             display_label = f"'{selected_sector}' sector"
+        elif selected_category == "ETF" and selected_etf_type:
+            kws = ETF_KEYWORDS.get(selected_etf_type, [selected_etf_type.lower()])
+            funds = [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
+            display_label = f"'{selected_etf_type}' ETF"
         else:
             display_label = f"'{selected_category}'"
 
@@ -133,8 +144,10 @@ if run_analysis:
             for idx, code in enumerate(scheme_codes):
                 progress.progress((idx + 1) / len(scheme_codes),
                                   text=f"Analyzing fund {idx + 1} of {len(scheme_codes)}...")
+                nav_from_cache = False
                 try:
                     analyzer = MutualFundAnalyzer(code, sector=selected_sector or "")
+                    nav_from_cache = analyzer.nav_from_cache
                     fund_name = analyzer.scheme_data.get('scheme_name', code) if analyzer.scheme_data else code
                     progress.progress((idx + 1) / len(scheme_codes),
                                       text=f"[{idx + 1}/{len(scheme_codes)}] Analyzing: {fund_name}")
@@ -146,7 +159,7 @@ if run_analysis:
                         st.warning(f"Could not fetch data for scheme code {code}.")
                 except Exception as e:
                     st.warning(f"Skipped scheme {code}: {str(e)}")
-                if idx < len(scheme_codes) - 1 and not analyzer.nav_from_cache:
+                if idx < len(scheme_codes) - 1 and not nav_from_cache:
                     time.sleep(0.5)
             progress.empty()
             if category_status:
@@ -249,10 +262,9 @@ if 'all_results' in st.session_state:
         st.metric("3Y Sharpe Ratio", sharpe)
 
     from decision_engine.risk_profiles import RISK_PROFILES
-    _weights = RISK_PROFILES.get(risk_profile, {})
+    _weights = custom_weights if risk_profile == 'Custom' and custom_weights else RISK_PROFILES.get(risk_profile, {})
     _weight_str = '  |  '.join(f"{_labels[k]} **{int(v*100)}%**" for k, v in _weights.items())
     st.info(f"Analyzing **{metrics['scheme_name']}** · **{risk_profile}** risk profile\n\n{_weight_str}")
-
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📈 Return Performance",
         "📉 Risk",
