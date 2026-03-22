@@ -107,7 +107,8 @@ class RollingSortinoRatioCalculator:
                     'mean': round(valid_sortinos.mean(), Constants.DECIMAL_PLACES),
                     'positive_share': round((valid_sortinos > 0).mean() * 100, Constants.DECIMAL_PLACES),
                     'percentile_10': round(valid_sortinos.quantile(0.10), Constants.DECIMAL_PLACES),
-                    'latest': round(valid_sortinos.iloc[-1], Constants.DECIMAL_PLACES)
+                    'latest': round(valid_sortinos.iloc[-1], Constants.DECIMAL_PLACES),
+                    'count': len(valid_sortinos),
                 })
         
         return rolling_sortino_ratios

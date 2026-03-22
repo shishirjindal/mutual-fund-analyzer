@@ -87,7 +87,8 @@ class RollingHitRatioCalculator:
                     'percentile_25': round(valid_ratios.quantile(0.25), Constants.DECIMAL_PLACES),
                     'min': round(valid_ratios.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_ratios.max(), Constants.DECIMAL_PLACES),
-                    'latest': round(valid_ratios.iloc[-1], Constants.DECIMAL_PLACES)
+                    'latest': round(valid_ratios.iloc[-1], Constants.DECIMAL_PLACES),
+                    'count': len(valid_ratios),
                 })
                 
         return rolling_hit_ratios

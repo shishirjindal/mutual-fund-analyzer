@@ -108,7 +108,8 @@ class RollingAlphaCalculator:
                     'positive_share': round((valid_alphas > 0).sum() / len(valid_alphas) * 100, Constants.DECIMAL_PLACES),
                     'min': round(valid_alphas.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_alphas.max(), Constants.DECIMAL_PLACES),
-                    'latest': round(valid_alphas.iloc[-1], Constants.DECIMAL_PLACES)
+                    'latest': round(valid_alphas.iloc[-1], Constants.DECIMAL_PLACES),
+                    'count': len(valid_alphas),
                 })
         
         return rolling_alphas

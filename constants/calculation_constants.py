@@ -13,3 +13,6 @@ class CalculationConstants:
     # Date patterns for NAV lookup at year boundaries
     JANUARY_DATE_DAYS = [1, 2, 3, 4]
     JANUARY_MONTH = 1
+
+    # Expected rolling data points per window (used for rolling_confidence)
+    ROLLING_EXPECTED_POINTS = {1: 2200, 3: 1700, 5: 1200}

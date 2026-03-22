@@ -69,7 +69,8 @@ class RollingReturnsCalculator:
                 'max': round(cagr_values.max(), Constants.DECIMAL_PLACES),
                 'median': round(cagr_values.median(), Constants.DECIMAL_PLACES),
                 'percentile_25': round(cagr_values.quantile(0.25), Constants.DECIMAL_PLACES),
-                'std_dev': round(cagr_values.std(), Constants.DECIMAL_PLACES)
+                'std_dev': round(cagr_values.std(), Constants.DECIMAL_PLACES),
+                'count': len(cagr_values),
             }
         
         return rolling_returns

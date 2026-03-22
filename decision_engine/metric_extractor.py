@@ -169,3 +169,43 @@ class MetricExtractor:
 
 # Module-level alias so decision_engine.py can call extract_metric_value(...)
 extract_metric_value = MetricExtractor.extract
+
+
+def extract_rolling_count(metric_id: str, rolling_window: int, metrics: Dict[str, Any]) -> Optional[int]:
+    """
+    Return the number of computed rolling values for a given metric_id and window.
+    Returns None if the data is missing or has an error.
+    """
+    _returns_ids = {
+        'rolling_5y_median', 'rolling_5y_percentile_25', 'rolling_5y_std_dev', 'rolling_5y_avg',
+        'rolling_3y_median', 'rolling_3y_percentile_25', 'rolling_3y_std_dev', 'rolling_3y_avg',
+    }
+    _list_data_keys = {
+        'rolling_sharpe':    'rolling_sharpe_data',
+        'rolling_sortino':   'rolling_sortino_data',
+        'rolling_alpha':     'rolling_alpha_data',
+        'rolling_ir':        'rolling_information_ratio_data',
+        'rolling_hit_ratio': 'rolling_hit_ratio_data',
+        'rolling_mdd':       'rolling_drawdown_data',
+        'rolling_std_dev':   'rolling_std_dev_data',
+    }
+
+    try:
+        # Rolling returns are stored in rolling_data[window] dict
+        if metric_id in _returns_ids:
+            rd = metrics.get('rolling_data', {}).get(rolling_window, {})
+            if isinstance(rd, dict):
+                return rd.get('count')
+            return None
+
+        # All other rolling metrics are stored as lists keyed by rolling_window
+        for prefix, data_key in _list_data_keys.items():
+            if metric_id.startswith(prefix):
+                entry = next(
+                    (e for e in metrics.get(data_key, []) if e.get('rolling_window') == rolling_window),
+                    None,
+                )
+                return entry.get('count') if entry else None
+    except Exception:
+        pass
+    return None

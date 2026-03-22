@@ -98,7 +98,8 @@ class RollingInformationRatioCalculator:
                     'positive_share': round((valid_ir > 0).sum() / len(valid_ir) * 100, Constants.DECIMAL_PLACES),
                     'min': round(valid_ir.min(), Constants.DECIMAL_PLACES),
                     'max': round(valid_ir.max(), Constants.DECIMAL_PLACES),
-                    'latest': round(valid_ir.iloc[-1], Constants.DECIMAL_PLACES)
+                    'latest': round(valid_ir.iloc[-1], Constants.DECIMAL_PLACES),
+                    'count': len(valid_ir),
                 })
         
         return rolling_information_ratios
