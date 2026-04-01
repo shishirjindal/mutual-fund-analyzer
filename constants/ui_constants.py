@@ -23,3 +23,13 @@ RISK_ADJUSTED_METRIC_ID = {
     ('static_treynor_ratio_data', 3): 'static_treynor_3y',
     ('static_treynor_ratio_data', 5): 'static_treynor_5y',
 }
+
+# Fixed equity category allocation (percentages, sum = 100)
+EQUITY_ALLOCATION = [
+    {'category': 'Large Cap',      'allocation': 25},
+    {'category': 'Flexi Cap',      'allocation': 20},
+    {'category': 'Mid Cap',        'allocation': 25},
+    {'category': 'Small Cap',      'allocation': 15},
+    {'category': 'Value & Contra', 'allocation': 10},
+    {'category': 'Focused Fund',   'allocation':  5},
+]
