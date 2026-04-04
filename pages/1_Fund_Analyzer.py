@@ -6,7 +6,7 @@ from mfa import MutualFundAnalyzer
 from decision_engine.decision_engine import DecisionEngine
 from decision_engine.risk_profiles import RISK_PROFILES
 from fetchers.amfi_fetcher import AmfiFetcher
-from constants.amfi_constants import SECTOR_KEYWORDS, ETF_KEYWORDS
+from constants.amfi_constants import SECTOR_KEYWORDS, ETF_KEYWORDS, FOF_KEYWORDS
 from log.logger_config import configure_logging
 from ui import comparison_table, tab_returns, tab_risk, tab_risk_adjusted, tab_manager_skill, tab_consistency
 
@@ -48,6 +48,7 @@ if analysis_mode == "By Scheme Code":
     selected_category = None
     selected_sector = None
     selected_etf_type = None
+    selected_fof_type = None
 else:
     scheme_codes_input = ""
     fetcher = AmfiFetcher()
@@ -57,6 +58,7 @@ else:
     selected_category = st.sidebar.selectbox("Select Category", categories_for_group)
     selected_sector = None
     selected_etf_type = None
+    selected_fof_type = None
     if selected_category == "Sectoral / Thematic":
         with st.spinner("Loading sector list..."):
             _all_sectoral = AmfiFetcher().get_funds_for_category("Sectoral / Thematic")
@@ -69,6 +71,12 @@ else:
             _etf_types = fetcher.get_etf_types_from_funds(_all_etfs)
         if _etf_types:
             selected_etf_type = st.sidebar.selectbox("Select ETF Type", _etf_types)
+    elif selected_category == "Fund of Funds":
+        with st.spinner("Loading FOF types..."):
+            _all_fofs = AmfiFetcher().get_funds_for_category("Fund of Funds")
+            _fof_types = fetcher.get_fof_types_from_funds(_all_fofs)
+        if _fof_types:
+            selected_fof_type = st.sidebar.selectbox("Select FOF Type", _fof_types)
     analyze_button = st.sidebar.button("Analyze Category")
     run_analysis = analyze_button
 st.sidebar.divider()
@@ -120,6 +128,10 @@ if run_analysis:
             kws = ETF_KEYWORDS.get(selected_etf_type, [selected_etf_type.lower()])
             funds = [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
             display_label = f"'{selected_etf_type}' ETF"
+        elif selected_category == "Fund of Funds" and selected_fof_type:
+            kws = FOF_KEYWORDS.get(selected_fof_type, [selected_fof_type.lower()])
+            funds = [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
+            display_label = f"'{selected_fof_type}' FOF"
         else:
             display_label = f"'{selected_category}'"
 
