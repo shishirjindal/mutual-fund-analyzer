@@ -128,7 +128,7 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
 DIRECT_KEYWORDS: List[str] = ["direct"]
 
 # Keywords that must appear in the fund name to qualify as Growth oriented
-GROWTH_KEYWORDS: List[str] = ["growth"]
+GROWTH_KEYWORDS: List[str] = ["growth", "cumulative"]
 
 # Keywords that disqualify a fund (IDCW, dividend payout, bonus, etc.)
 # Note: "dividend yield" is a legitimate SEBI equity category — only exclude
