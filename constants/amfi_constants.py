@@ -48,7 +48,7 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
                            "automotive", "defence fund",
                            "international equity", "global agri",
                            "asian equity", "japan equity", "taiwan equity",
-                           "us equity", "us bluechip", "nasdaq",
+                           "us equity", "us bluechip",
                            "emerging market", "global emerging",
                            "europe", "brazil fund", "greater china",
                            "build india", "opportunities fund",
@@ -108,7 +108,7 @@ CATEGORY_KEYWORDS: Dict[str, List[str]] = {
     # ── Index / Passive ───────────────────────────────────────────────────────
     "Index Fund":               ["index fund", "nifty 50 fund", "sensex fund",
                                  "crisil-ibx aaa", "crisil ibx aaa", "ibx aaa",
-                                 "bse india sector"],
+                                 "bse india sector", "nasdaq"],
     "Fund of Funds":            ["fund of fund", "fof ", "asset allocation fof",
                                  "passive fof", "omni fof", "gold fund",
                                  "global advantage fund", "global stable equity",
@@ -169,7 +169,7 @@ FUND_GROUPS: Dict[str, List[str]] = {
 SECTOR_KEYWORDS: Dict[str, List[str]] = {
     "Banking & Financial":   ["banking", "financial", "bank & fin", "fintech", "bfsi"],
     "IT & Technology":       ["technology", "it fund", "digital", "innovation", "tech",
-                              "teck", "nasdaq", "internet"],
+                              "teck", "internet"],
     "Pharma & Healthcare":   ["pharma", "healthcare", "health care", "medic",
                               "health and wellness", "diagnostics"],
     "Infrastructure":        ["infrastructure", "infra", "build india", "tiger",
