@@ -42,6 +42,11 @@ def _save_to_disk(scheme_code: str, data: Dict[str, Any]) -> None:
     p = _cache_dir() / f"{scheme_code}_{date_str}.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     logger.info("Saved NAV data for scheme '%s' to disk cache (%s)", scheme_code, p.name)
+    # Delete any older cache files for this scheme
+    for old in _cache_dir().glob(f"{scheme_code}_*.json"):
+        if old != p:
+            old.unlink()
+            logger.debug("Deleted old cache file '%s'", old.name)
 
 
 def _latest_cache_file(scheme_code: str) -> Optional[pathlib.Path]:

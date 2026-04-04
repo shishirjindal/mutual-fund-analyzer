@@ -53,6 +53,11 @@ def _save_to_disk(index_name: str, data: Dict[str, Any]) -> None:
     p = _cache_dir() / f"{prefix}_{date_str}.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     logger.info("Saved '%s' TRI data to disk cache (%s)", index_name, p.name)
+    # Delete any older cache files for this index
+    for old in _cache_dir().glob(f"{prefix}_*.json"):
+        if old != p:
+            old.unlink()
+            logger.debug("Deleted old cache file '%s'", old.name)
 
 
 def _latest_cache_file(index_name: str) -> Optional[pathlib.Path]:
