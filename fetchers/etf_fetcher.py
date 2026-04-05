@@ -59,7 +59,8 @@ from typing import Dict, List, Optional
 
 from constants.etf_constants import (
     GOLD_BENCHMARK_TICKER, SILVER_BENCHMARK_TICKER, USD_INR_TICKER,
-    ETF_QUALITY_WEIGHTS,
+    ETF_QUALITY_WEIGHTS, ETF_MIN_TRADED_VALUE_INR,
+    ETF_LIQUIDITY_DOMINANCE_FACTOR, ETF_EXPENSE_OVERRIDE_THRESHOLD,
 )
 from fetchers.etf_metadata_cache import load_etf_metadata, cache_written_date
 
@@ -283,6 +284,7 @@ def compute_etf_metrics(
         "correlation":            round(float(corr), 4),
         "data_points":            len(ret),
         "avg_volume":             int(yf.Ticker(ticker).info.get("averageVolume") or 0),
+        "avg_traded_value":       round(float(etf_prices.iloc[-1]) * int(yf.Ticker(ticker).info.get("averageVolume") or 0), 2),
         "warnings":               warnings,
     }
 
@@ -291,69 +293,79 @@ def _compute_quality_scores(results: list,
                              expense_ratios: dict,
                              aum_crores: dict) -> list:
     """
-    Compute a composite quality score (0–100) for each ETF and add it to the result dict.
+    Compute a composite quality score (0–100) for each ETF.
 
-    Inputs per ETF:
-      - tracking_difference  (from tracking calculation, already in results)
-      - expense_ratio        (from EXPENSE_RATIOS constant, % p.a.)
-      - aum                  (from AUM_CRORES constant, INR crores)
-      - avg_volume           (from yfinance averageVolume, shares/day)
+    Steps:
+      1. Hard filter: remove ETFs with avg_traded_value < ETF_MIN_TRADED_VALUE_INR.
+      2. Normalize each metric to 0–100.
+      3. Compute weighted score using ETF_QUALITY_WEIGHTS.
+      4. Apply liquidity dominance rule: if ETF A's liquidity score >=
+         ETF_LIQUIDITY_DOMINANCE_FACTOR × ETF B's, prefer A unless expense
+         ratio difference > ETF_EXPENSE_OVERRIDE_THRESHOLD.
 
-    Weights:
-      40% Tracking Difference — lower abs(TD) is better
-      25% Expense Ratio       — lower is better
-      20% AUM                 — higher is better (log-scaled)
-      15% Liquidity           — higher avg volume is better (log-scaled)
-
-    Missing metrics → neutral score of 50.
-    All scores clipped to [0, 100].
+    Missing metrics → neutral score of 50. All scores clipped to [0, 100].
     """
     valid = [r for r in results if "error" not in r]
     if not valid:
         return results
 
-    # Collect AUM and volume values for log-scaling across the peer group
-    aum_vals = [aum_crores.get(r["ticker"]) for r in valid]
-    vol_vals = [r.get("avg_volume") for r in valid]
+    # Step 1: hard liquidity filter
+    illiquid = []
+    liquid   = []
+    for r in valid:
+        if r.get("avg_traded_value", 0) < ETF_MIN_TRADED_VALUE_INR:
+            r["filtered_reason"] = (
+                f"avg traded value ₹{r.get('avg_traded_value',0):,.0f} "
+                f"< ₹{ETF_MIN_TRADED_VALUE_INR:,.0f} threshold"
+            )
+            logger.warning("[%s] Filtered out: %s", r["name"], r["filtered_reason"])
+            illiquid.append(r)
+        else:
+            liquid.append(r)
 
-    aum_vals_clean = [v for v in aum_vals if v is not None and v > 0]
-    vol_vals_clean = [v for v in vol_vals if v is not None and v > 0]
+    # Score only liquid ETFs; illiquid get quality_score=0
+    for r in illiquid:
+        r["quality_score"]   = 0.0
+        r["score_breakdown"] = {"tracking": 0, "expense": 0, "aum": 0, "liquidity": 0}
 
-    min_aum = min(aum_vals_clean) if aum_vals_clean else None
-    max_aum = max(aum_vals_clean) if aum_vals_clean else None
-    min_vol = min(vol_vals_clean) if vol_vals_clean else None
-    max_vol = max(vol_vals_clean) if vol_vals_clean else None
+    if not liquid:
+        return results
+
+    # Collect values for log-scaling across liquid peer group
+    aum_vals = [aum_crores.get(r["ticker"]) for r in liquid]
+    vol_vals = [r.get("avg_volume") for r in liquid]
+
+    aum_clean = [v for v in aum_vals if v and v > 0]
+    vol_clean = [v for v in vol_vals if v and v > 0]
+
+    min_aum, max_aum = (min(aum_clean), max(aum_clean)) if aum_clean else (None, None)
+    min_vol, max_vol = (min(vol_clean), max(vol_clean)) if vol_clean else (None, None)
 
     def _log_score(val, lo, hi) -> float:
-        """Normalize val to 0–100 using log scaling between lo and hi."""
-        if val is None or val <= 0 or lo is None or hi is None:
+        if not val or val <= 0 or lo is None or hi is None:
             return 50.0
         if lo == hi:
             return 100.0
         import math
-        score = (math.log(val) - math.log(lo)) / (math.log(hi) - math.log(lo)) * 100
-        return float(np.clip(score, 0, 100))
+        return float(np.clip(
+            (math.log(val) - math.log(lo)) / (math.log(hi) - math.log(lo)) * 100,
+            0, 100
+        ))
 
-    for r in valid:
+    # Step 2 & 3: normalize and score
+    for r in liquid:
         td  = r.get("tracking_difference")
         exp = expense_ratios.get(r["ticker"])
         aum = aum_crores.get(r["ticker"])
         vol = r.get("avg_volume")
 
-        # 1. Tracking difference score — lower abs(TD) is better
-        td_score  = float(np.clip(100 - abs(td) * 20, 0, 100)) if td is not None else 50.0
-
-        # 2. Expense ratio score — lower is better (0.5% → 0, 0% → 100)
-        exp_score = float(np.clip(100 - exp * 200, 0, 100)) if exp is not None else 50.0
-
-        # 3. AUM score — log-scaled across peer group
+        td_score  = float(np.clip(100 - abs(td) * 20, 0, 100)) if td  is not None else 50.0
+        exp_score = float(np.clip(100 - exp * 200,    0, 100)) if exp is not None else 50.0
         aum_score = _log_score(aum, min_aum, max_aum)
-
-        # 4. Liquidity score — log-scaled across peer group
         liq_score = _log_score(vol, min_vol, max_vol)
 
         quality_score = round(
-            ETF_QUALITY_WEIGHTS["tracking"]  * td_score +
+            ETF_QUALITY_WEIGHTS["tracking"]  * td_score  +
             ETF_QUALITY_WEIGHTS["expense"]   * exp_score +
             ETF_QUALITY_WEIGHTS["aum"]       * aum_score +
             ETF_QUALITY_WEIGHTS["liquidity"] * liq_score,
@@ -368,7 +380,28 @@ def _compute_quality_scores(results: list,
             "liquidity": round(liq_score, 2),
         }
 
-    return results
+    # Step 4: liquidity dominance rule — re-rank pairs where one ETF
+    # dominates on liquidity unless the other has a meaningfully lower expense ratio
+    liquid.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+    for i in range(len(liquid)):
+        for j in range(i + 1, len(liquid)):
+            a, b = liquid[i], liquid[j]
+            liq_a = a["score_breakdown"]["liquidity"]
+            liq_b = b["score_breakdown"]["liquidity"]
+            exp_a = expense_ratios.get(a["ticker"], 0)
+            exp_b = expense_ratios.get(b["ticker"], 0)
+
+            # If b dominates a on liquidity and expense difference doesn't justify a
+            if liq_b >= ETF_LIQUIDITY_DOMINANCE_FACTOR * liq_a:
+                if (exp_a - exp_b) <= ETF_EXPENSE_OVERRIDE_THRESHOLD:
+                    liquid[i], liquid[j] = liquid[j], liquid[i]
+                    logger.info(
+                        "Liquidity dominance: %s ranked above %s "
+                        "(liq %.1f vs %.1f, exp diff %.2f%%)",
+                        b["name"], a["name"], liq_b, liq_a, exp_a - exp_b,
+                    )
+
+    return liquid + illiquid
 
 
 def fetch_all_etf_metrics(
@@ -418,9 +451,7 @@ def fetch_all_etf_metrics(
     if refreshed:
         logger.info("ETF metadata cache refreshed from constants")
 
-    # Compute quality scores across the peer group (needs all results for log-scaling)
+    # Compute quality scores, apply hard filter and liquidity dominance rule
     valid = _compute_quality_scores(valid, expense_ratios, aum_crores)
-
-    # Sort by quality score descending (best ETF first)
-    valid.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+    # _compute_quality_scores returns liquid ETFs sorted by quality, illiquid appended last
     return valid + errors

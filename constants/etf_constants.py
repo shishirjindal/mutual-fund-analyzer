@@ -60,13 +60,27 @@ AUM_CRORES: Dict[str, float] = {
 }
 
 # Quality score weights — must sum to 1.0
-# Tracking Difference: primary metric, how closely ETF follows the commodity
+# Liquidity weighted highest: bid-ask spread and execution cost have larger
+# real-world impact than small expense ratio differences for most investors.
+# Tracking Difference: how closely ETF follows the commodity
 # Expense Ratio: lower cost = better long-term returns
 # AUM: larger fund = more stable, less tracking deviation risk
 # Liquidity: higher volume = tighter bid-ask spread, easier to trade
 ETF_QUALITY_WEIGHTS: dict = {
-    "tracking":  0.40,
-    "expense":   0.25,
-    "aum":       0.20,
-    "liquidity": 0.15,
+    "tracking":  0.35,
+    "expense":   0.20,
+    "aum":       0.15,
+    "liquidity": 0.30,
 }
+
+# Minimum avg traded value (INR) per day — ETFs below this are filtered out
+# before scoring (too illiquid for practical investing)
+ETF_MIN_TRADED_VALUE_INR: float = 1_000_000  # ₹10 lakh/day
+
+# Liquidity dominance threshold — if ETF A's liquidity score >= this multiple
+# of ETF B's, prefer A unless expense ratio difference > ETF_EXPENSE_OVERRIDE_THRESHOLD
+ETF_LIQUIDITY_DOMINANCE_FACTOR: float = 1.5
+ETF_EXPENSE_OVERRIDE_THRESHOLD: float = 0.5  # % p.a.
+
+# Periods available for analysis
+ETF_PERIODS: List[str] = ["6mo", "1y", "3y", "5y"]
