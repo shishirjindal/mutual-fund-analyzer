@@ -34,9 +34,29 @@ class AmfiFetcher:
         """
         Fetch all Direct Growth funds for a specific category.
 
-        Returns:
-            List of dicts with scheme_code and scheme_name.
+        For virtual Global Equity sub-categories, pulls from the appropriate
+        parent category and filters by the International sector/FOF keywords.
         """
+        if category == "International (Direct)":
+            all_sectoral = self.fetch_and_parse(category_filter="Sectoral / Thematic")
+            funds = all_sectoral.get("Sectoral / Thematic", [])
+            kws = SECTOR_KEYWORDS.get("International", [])
+            return [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
+
+        if category == "International (FOF)":
+            all_fof = self.fetch_and_parse(category_filter="Fund of Funds")
+            funds = all_fof.get("Fund of Funds", [])
+            kws = FOF_KEYWORDS.get("International Equity", [])
+            return [f for f in funds if any(kw in f["scheme_name"].lower() for kw in kws)]
+
+        if category in ("Gold", "Silver", "Metals & Mining"):
+            etf_funds = self.fetch_and_parse(category_filter="ETF").get("ETF", [])
+            fof_funds = self.fetch_and_parse(category_filter="Fund of Funds").get("Fund of Funds", [])
+            sectoral_funds = self.fetch_and_parse(category_filter="Sectoral / Thematic").get("Sectoral / Thematic", [])
+            kws = FOF_KEYWORDS.get(category, [])
+            return [f for f in etf_funds + fof_funds + sectoral_funds
+                    if any(kw in f["scheme_name"].lower() for kw in kws)]
+
         result = self.fetch_and_parse(category_filter=category)
         return result.get(category, [])
 

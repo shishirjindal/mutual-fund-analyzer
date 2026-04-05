@@ -157,6 +157,12 @@ FUND_GROUPS: Dict[str, List[str]] = {
     "Index / Passive": [
         "Index Fund", "ETF",
     ],
+    "Global Equity": [
+        "International (Direct)", "International (FOF)",
+    ],
+    "Commodities": [
+        "Gold", "Silver", "Metals & Mining",
+    ],
     "Fund of Funds": [
         "Fund of Funds",
     ],
@@ -215,7 +221,10 @@ ETF_KEYWORDS: Dict[str, List[str]] = {
 
 # Sub-category keyword map for Fund of Funds
 FOF_KEYWORDS: Dict[str, List[str]] = {
-    "Gold & Silver":        ["gold", "silver", "precious metal", "world gold"],
+    "Gold":                 ["gold"],
+    "Silver":               ["silver"],
+    "Metals & Mining":      ["metal", "mining", "commodit", "resources", "strategic metal",
+                             "world mining"],
     "International Equity": ["us equity", "us specific equity", "nasdaq", "global equity",
                              "global innovation", "global consumer", "global brand",
                              "global clean energy", "global electric",
@@ -254,6 +263,5 @@ FOF_KEYWORDS: Dict[str, List[str]] = {
                              "india manufacturing", "india new age",
                              "aqua fund", "climate change",
                              "artificial intelligence", "electric & autonomous",
-                             "strategic metal", "world mining",
                              "select ipo", "bharat 22"],
 }
