@@ -59,6 +59,7 @@ from typing import Dict, List, Optional
 
 from constants.etf_constants import (
     GOLD_BENCHMARK_TICKER, SILVER_BENCHMARK_TICKER, USD_INR_TICKER,
+    ETF_QUALITY_WEIGHTS,
 )
 from fetchers.etf_metadata_cache import load_etf_metadata, cache_written_date
 
@@ -352,10 +353,10 @@ def _compute_quality_scores(results: list,
         liq_score = _log_score(vol, min_vol, max_vol)
 
         quality_score = round(
-            0.40 * td_score +
-            0.25 * exp_score +
-            0.20 * aum_score +
-            0.15 * liq_score,
+            ETF_QUALITY_WEIGHTS["tracking"]  * td_score +
+            ETF_QUALITY_WEIGHTS["expense"]   * exp_score +
+            ETF_QUALITY_WEIGHTS["aum"]       * aum_score +
+            ETF_QUALITY_WEIGHTS["liquidity"] * liq_score,
             2
         )
 

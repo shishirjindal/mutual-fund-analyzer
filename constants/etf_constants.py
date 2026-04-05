@@ -59,5 +59,14 @@ AUM_CRORES: Dict[str, float] = {
     "AXISILVER.NS":   420.0,
 }
 
-# Periods available for analysis
-ETF_PERIODS: List[str] = ["6mo", "1y", "3y", "5y"]
+# Quality score weights — must sum to 1.0
+# Tracking Difference: primary metric, how closely ETF follows the commodity
+# Expense Ratio: lower cost = better long-term returns
+# AUM: larger fund = more stable, less tracking deviation risk
+# Liquidity: higher volume = tighter bid-ask spread, easier to trade
+ETF_QUALITY_WEIGHTS: dict = {
+    "tracking":  0.40,
+    "expense":   0.25,
+    "aum":       0.20,
+    "liquidity": 0.15,
+}
