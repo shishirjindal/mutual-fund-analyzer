@@ -9,11 +9,11 @@ import datetime
 import logging
 from typing import Dict
 
-from fetchers.etf.downloader import _download_batch, _period_to_dates
-from fetchers.etf.benchmark import _build_benchmark
-from fetchers.etf.tracker import compute_etf_metrics
-from fetchers.etf.scorer import compute_quality_scores
-from fetchers.etf.metadata_cache import load_etf_metadata
+from etf.downloader import _download_batch, _period_to_dates
+from etf.benchmark import _build_benchmark
+from etf.tracker import compute_etf_metrics
+from etf.scorer import compute_quality_scores
+from etf.metadata_cache import load_etf_metadata
 
 logger = logging.getLogger(__name__)
 

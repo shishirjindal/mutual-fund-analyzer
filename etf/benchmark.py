@@ -22,7 +22,7 @@ import pandas as pd
 from typing import Optional
 
 from constants.etf_constants import GOLD_BENCHMARK_TICKER, SILVER_BENCHMARK_TICKER, USD_INR_TICKER
-from fetchers.etf.downloader import _download
+from etf.downloader import _download
 
 logger = logging.getLogger(__name__)
 

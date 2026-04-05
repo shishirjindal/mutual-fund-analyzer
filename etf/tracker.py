@@ -31,7 +31,7 @@ import yfinance as yf
 import datetime
 from typing import Dict, Optional, Tuple
 
-from fetchers.etf.downloader import _download
+from etf.downloader import _download
 
 logger = logging.getLogger(__name__)
 
