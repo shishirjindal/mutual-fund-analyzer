@@ -82,5 +82,13 @@ ETF_MIN_TRADED_VALUE_INR: float = 1_000_000  # ₹10 lakh/day
 ETF_LIQUIDITY_DOMINANCE_FACTOR: float = 1.5
 ETF_EXPENSE_OVERRIDE_THRESHOLD: float = 0.5  # % p.a.
 
+# Cost model constants
+# k: spread estimation constant — spread = k / liquidity_score
+# Calibrated so that a mid-liquidity ETF (score=50) has ~0.05% spread
+ETF_SPREAD_K: float = 2.5  # spread = k / liquidity_score (both in %)
+
+# Default holding period in years — fixed at 5 years
+ETF_DEFAULT_HOLDING_YEARS: float = 5.0
+
 # Periods available for analysis
 ETF_PERIODS: List[str] = ["6mo", "1y", "3y", "5y"]

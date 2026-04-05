@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-ETF quality scorer.
+ETF quality scorer with cost-based optimization.
 
-Computes a composite quality score (0–100) ranking ETFs by:
-  - Tracking efficiency (how closely the ETF follows the commodity)
-  - Cost (expense ratio)
-  - Stability (AUM size)
-  - Liquidity (trading volume / traded value)
+Selection model:
+  Total Cost = Expense Cost + Impact Cost
 
-Weights and thresholds are configured in constants/etf_constants.py.
+  expense_cost = expense_ratio (%) × holding_period_years
+  impact_cost  = spread × 2          (buy + sell round-trip)
+  spread       = ETF_SPREAD_K / liquidity_score
 
-Liquidity dominance rule:
-  If ETF A's liquidity score >= ETF_LIQUIDITY_DOMINANCE_FACTOR × ETF B's,
-  prefer A over B unless B has a meaningfully lower expense ratio
-  (difference > ETF_EXPENSE_OVERRIDE_THRESHOLD). This reflects the real-world
-  principle that execution cost (bid-ask spread) often matters more than small
-  TER differences.
+  ETF with minimum total_cost is ranked first.
+
+Behaviour:
+  Long holding period  → expense_cost dominates → favours low-TER ETFs (e.g. SBI)
+  Short holding period → impact_cost dominates  → favours high-liquidity ETFs (e.g. Nippon)
+
+Quality score (0–100) is still computed for display, but ranking uses total_cost.
 """
 
 import math
@@ -26,18 +26,15 @@ from typing import Dict, List, Optional
 from constants.etf_constants import (
     ETF_QUALITY_WEIGHTS,
     ETF_MIN_TRADED_VALUE_INR,
-    ETF_LIQUIDITY_DOMINANCE_FACTOR,
-    ETF_EXPENSE_OVERRIDE_THRESHOLD,
+    ETF_SPREAD_K,
+    ETF_DEFAULT_HOLDING_YEARS,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def _log_score(val: Optional[float], lo: Optional[float], hi: Optional[float]) -> float:
-    """
-    Normalize val to 0–100 using log scaling between lo and hi.
-    Returns neutral score of 50 if any input is missing or invalid.
-    """
+    """Normalize val to 0–100 using log scaling. Returns 50 if inputs are invalid."""
     if not val or val <= 0 or lo is None or hi is None:
         return 50.0
     if lo == hi:
@@ -48,21 +45,44 @@ def _log_score(val: Optional[float], lo: Optional[float], hi: Optional[float]) -
     ))
 
 
-def compute_quality_scores(results: List[Dict],
-                            expense_ratios: Dict[str, float],
-                            aum_crores: Dict[str, float]) -> List[Dict]:
+def _estimate_spread(liquidity_score: float) -> float:
     """
-    Compute quality scores for all ETFs and return them sorted best-first.
+    Estimate bid-ask spread (%) from liquidity score using inverse relationship.
+    spread = ETF_SPREAD_K / liquidity_score
+    A score of 50 → spread ≈ 0.05% (ETF_SPREAD_K=2.5).
+    A score of 100 → spread ≈ 0.025%.
+    A score of 10  → spread ≈ 0.25%.
+    """
+    if liquidity_score <= 0:
+        return ETF_SPREAD_K  # worst case
+    return ETF_SPREAD_K / liquidity_score
+
+
+def compute_quality_scores(
+    results: List[Dict],
+    expense_ratios: Dict[str, float],
+    aum_crores: Dict[str, float],
+    holding_period_years: float = ETF_DEFAULT_HOLDING_YEARS,
+) -> List[Dict]:
+    """
+    Score and rank ETFs using a cost-based optimization model.
 
     Steps:
-      1. Hard filter: ETFs with avg_traded_value < ETF_MIN_TRADED_VALUE_INR
-         are marked illiquid and scored 0.
-      2. Normalize tracking difference, expense ratio, AUM, and volume to 0–100.
-      3. Compute weighted composite score.
-      4. Apply liquidity dominance rule to re-rank pairs where one ETF
-         significantly dominates on liquidity.
+      1. Hard filter: ETFs with avg_traded_value < ETF_MIN_TRADED_VALUE_INR → score 0.
+      2. Compute liquidity score (log-scaled) for each ETF.
+      3. Estimate spread from liquidity score.
+      4. Compute total_cost = expense_cost + impact_cost.
+      5. Compute quality score (0–100) for display.
+      6. Rank by total_cost ascending (lowest cost = best).
 
-    Returns liquid ETFs sorted by quality_score DESC, illiquid appended last.
+    Args:
+        results:              List of ETF metric dicts from tracker.
+        expense_ratios:       ticker → expense ratio (% p.a.).
+        aum_crores:           ticker → AUM in INR crores.
+        holding_period_years: Investment horizon in years (affects expense vs impact cost balance).
+
+    Returns:
+        Liquid ETFs sorted by total_cost ASC, illiquid appended last.
     """
     valid = [r for r in results if "error" not in r]
     if not valid:
@@ -78,6 +98,9 @@ def compute_quality_scores(results: List[Dict],
             )
             logger.warning("[%s] Filtered out: %s", r["name"], r["filtered_reason"])
             r["quality_score"]   = 0.0
+            r["total_cost"]      = float("inf")
+            r["expense_cost"]    = None
+            r["impact_cost"]     = None
             r["score_breakdown"] = {"tracking": 0, "expense": 0, "aum": 0, "liquidity": 0}
             illiquid.append(r)
         else:
@@ -86,33 +109,51 @@ def compute_quality_scores(results: List[Dict],
     if not liquid:
         return results
 
-    # Step 2: collect peer-group min/max for log-scaling
-    aum_vals = [aum_crores.get(r["ticker"]) for r in liquid]
-    vol_vals = [r.get("avg_volume") for r in liquid]
-    aum_clean = [v for v in aum_vals if v and v > 0]
+    # Step 2: compute liquidity scores (log-scaled across peer group)
+    vol_vals  = [r.get("avg_volume") for r in liquid]
+    aum_vals  = [aum_crores.get(r["ticker"]) for r in liquid]
     vol_clean = [v for v in vol_vals if v and v > 0]
-    min_aum, max_aum = (min(aum_clean), max(aum_clean)) if aum_clean else (None, None)
+    aum_clean = [v for v in aum_vals if v and v > 0]
     min_vol, max_vol = (min(vol_clean), max(vol_clean)) if vol_clean else (None, None)
+    min_aum, max_aum = (min(aum_clean), max(aum_clean)) if aum_clean else (None, None)
 
-    # Step 3: score each ETF
     for r in liquid:
-        td  = r.get("tracking_difference")
         exp = expense_ratios.get(r["ticker"])
         aum = aum_crores.get(r["ticker"])
         vol = r.get("avg_volume")
 
-        td_score  = float(np.clip(100 - abs(td) * 20, 0, 100)) if td  is not None else 50.0
+        # Use multi-period tracking_score if available (0–100 already normalized),
+        # otherwise derive from td_1y / tracking_difference
+        td_score = r.get("tracking_score")
+        if td_score is None:
+            td = r.get("tracking_difference")
+            td_score = float(np.clip(100 - abs(td) * 20, 0, 100)) if td is not None else 50.0
+
+        # Normalized sub-scores (0–100) for display
         exp_score = float(np.clip(100 - exp * 200,    0, 100)) if exp is not None else 50.0
         aum_score = _log_score(aum, min_aum, max_aum)
         liq_score = _log_score(vol, min_vol, max_vol)
 
-        r["quality_score"] = round(
+        quality_score = round(
             ETF_QUALITY_WEIGHTS["tracking"]  * td_score  +
             ETF_QUALITY_WEIGHTS["expense"]   * exp_score +
             ETF_QUALITY_WEIGHTS["aum"]       * aum_score +
             ETF_QUALITY_WEIGHTS["liquidity"] * liq_score,
             2
         )
+
+        # Step 3–4: cost model
+        spread       = _estimate_spread(liq_score)
+        impact_cost  = spread * 2                                          # buy + sell
+        expense_cost = (exp or 0) * holding_period_years
+        total_cost   = expense_cost + impact_cost
+
+        r["quality_score"]   = quality_score
+        r["expense_ratio"]   = exp
+        r["aum_crores"]      = aum
+        r["total_cost"]      = round(total_cost, 4)
+        r["expense_cost"]    = round(expense_cost, 4)
+        r["impact_cost"]     = round(impact_cost, 4)
         r["score_breakdown"] = {
             "tracking":  round(td_score, 2),
             "expense":   round(exp_score, 2),
@@ -120,22 +161,12 @@ def compute_quality_scores(results: List[Dict],
             "liquidity": round(liq_score, 2),
         }
 
-    # Step 4: sort then apply liquidity dominance rule
-    liquid.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
-    for i in range(len(liquid)):
-        for j in range(i + 1, len(liquid)):
-            a, b = liquid[i], liquid[j]
-            liq_a = a["score_breakdown"]["liquidity"]
-            liq_b = b["score_breakdown"]["liquidity"]
-            exp_a = expense_ratios.get(a["ticker"], 0)
-            exp_b = expense_ratios.get(b["ticker"], 0)
-            if liq_b >= ETF_LIQUIDITY_DOMINANCE_FACTOR * liq_a:
-                if (exp_a - exp_b) <= ETF_EXPENSE_OVERRIDE_THRESHOLD:
-                    liquid[i], liquid[j] = liquid[j], liquid[i]
-                    logger.info(
-                        "Liquidity dominance: %s ranked above %s "
-                        "(liq %.1f vs %.1f, exp diff %.2f%%)",
-                        b["name"], a["name"], liq_b, liq_a, exp_a - exp_b,
-                    )
+        logger.debug(
+            "[%s] exp_cost=%.3f%% impact_cost=%.3f%% total=%.3f%% (holding=%.1fy spread=%.3f%%)",
+            r["name"], expense_cost, impact_cost, total_cost, holding_period_years, spread,
+        )
+
+    # Step 6: rank by total_cost ascending
+    liquid.sort(key=lambda x: x.get("total_cost", float("inf")))
 
     return liquid + illiquid
