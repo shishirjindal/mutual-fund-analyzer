@@ -12,8 +12,22 @@ A crisp, high-performance tool for mutual fund quantitative analysis and persona
 
 2. **Run Dashboard**:
    ```bash
-   streamlit run app.py
+   venv/bin/streamlit run app.py
    ```
+
+## 📸 Screenshots
+
+1. **Fund Analyzer**
+   ![Fund Analyzer](assets/screenshots/fund_analyzer.png)
+
+2. **Portfolio Allocation**
+   ![Portfolio Allocation](assets/screenshots/portfolio_allocation.png)
+
+3. **Category Comparison**
+   ![Category Comparison](assets/screenshots/category_comparison.png)
+
+4. **ETF Tracker**
+   ![ETF Tracker](assets/screenshots/etf_tracker.png)
 
 ## 🛠️ Key Features
 
