@@ -50,7 +50,7 @@ class ComparisonTable:
             .format("{:.2f}")
             .background_gradient(cmap='RdYlGn', subset=['Overall\nScore'], low=0.4, high=0.2)
             .set_properties(**{'border': '1px solid #e6e9ef'})
-            .applymap(lambda v: 'background-color: #ff4b4b; color: white;'
+            .map(lambda v: 'background-color: #ff4b4b; color: white;'
                       if isinstance(v, (int, float)) and v == 0.0 else '')
             .set_table_styles([
                 {'selector': 'thead th', 'props': [('font-weight', 'bold')]},
